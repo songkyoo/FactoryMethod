@@ -64,7 +64,7 @@ internal static class Helpers
     public static string GetParameterString(IParameterSymbol parameterSymbol)
     {
         var attributesString = GetParameterAttributesString(parameterSymbol);
-        var modifiersString = GetParameterModifiersString(parameterSymbol);
+        var modifiersString = GetParameterModifierString(parameterSymbol);
         var typeString = parameterSymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var nullabilityString = GetNullableAnnotationString(parameterSymbol, typeString);
         var nameString = GetCamelCaseName(parameterSymbol.Name);
@@ -155,29 +155,16 @@ internal static class Helpers
         };
     }
 
-    private static string GetParameterModifiersString(IParameterSymbol parameterSymbol)
+    private static string GetParameterModifierString(IParameterSymbol parameterSymbol)
     {
-        var modifiers = new List<string>();
-
-        switch (parameterSymbol.RefKind)
+        return parameterSymbol switch
         {
-            case RefKind.Ref:
-                modifiers.Add("ref");
-                break;
-            case RefKind.Out:
-                modifiers.Add("out");
-                break;
-            case RefKind.In:
-                modifiers.Add("in");
-                break;
-        }
-
-        if (parameterSymbol.IsParams)
-        {
-            modifiers.Add("params");
-        }
-
-        return modifiers.Count > 0 ? string.Join(" ", modifiers) + " " : "";
+            { RefKind: RefKind.Ref } => "ref ",
+            { RefKind: RefKind.Out } => "out ",
+            { RefKind: RefKind.In } => "in ",
+            { IsParams: true } => "params ",
+            _ => "",
+        };
     }
 
     private static string GetParameterDefaultValueString(IParameterSymbol parameterSymbol)
