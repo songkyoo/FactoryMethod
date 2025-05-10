@@ -256,7 +256,7 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
             hash *= fnvPrime;
         }
 
-        return $"{hash:x8}_{typeSymbol.Name}_{typeSymbol.Arity}.g.cs";
+        return $"{typeSymbol.Name}_{typeSymbol.Arity}.{hash:x8}.g.cs";
     }
 
     private static INamedTypeSymbol? GetTypeTarget(GeneratorSyntaxContext context)
