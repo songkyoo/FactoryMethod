@@ -227,7 +227,7 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
     {
         if (typeSymbol.IsRecord)
         {
-            return "record";
+            return typeSymbol.TypeKind is TypeKind.Struct ? "record struct" : "record" ;
         }
 
         return typeSymbol.TypeKind switch
