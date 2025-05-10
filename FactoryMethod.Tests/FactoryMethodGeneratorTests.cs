@@ -12,7 +12,9 @@ public class FactoryMethodGeneratorTests
     {
         var dataAnnotationsAssembly = typeof(System.ComponentModel.DataAnnotations.RequiredAttribute).Assembly;
 
-        var references = AppDomain.CurrentDomain.GetAssemblies()
+        var references = AppDomain
+            .CurrentDomain
+            .GetAssemblies()
             .Where(assembly => !assembly.IsDynamic && !string.IsNullOrWhiteSpace(assembly.Location))
             .Append(dataAnnotationsAssembly)
             .Select(assembly => MetadataReference.CreateFromFile(assembly.Location))

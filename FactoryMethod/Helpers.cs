@@ -9,6 +9,7 @@ internal static class Helpers
 {
     private const string GenerateFactoryMethodAttributeDisplayString =
         "Macaron.FactoryMethod.GenerateFactoryMethodAttribute";
+
     private const string IgnoreFactoryMethodAttributeDisplayString =
         "Macaron.FactoryMethod.IgnoreFactoryMethodAttribute";
 
