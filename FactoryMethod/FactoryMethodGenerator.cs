@@ -303,11 +303,11 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
         context.RegisterPostInitializationOutput(ctx =>
         {
             ctx.AddSource(
-                hintName: "GenerateFactoryMethodAttributes.g.cs",
+                hintName: "GenerateFactoryMethodAttribute.g.cs",
                 sourceText: SourceText.From(GenerateFactoryMethodAttributeSource, Encoding.UTF8)
             );
             ctx.AddSource(
-                hintName: "IgnoreFactoryMethodAttributes.g.cs",
+                hintName: "IgnoreFactoryMethodAttribute.g.cs",
                 sourceText: SourceText.From(IgnoreFactoryMethodAttributeSource, Encoding.UTF8)
             );
         });
