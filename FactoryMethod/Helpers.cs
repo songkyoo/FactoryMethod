@@ -1,5 +1,7 @@
 ﻿using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Editing;
 
 namespace Macaron.FactoryMethod;
 
@@ -174,37 +176,36 @@ internal static class Helpers
             return "";
         }
 
-        var defaultValue = parameterSymbol.ExplicitDefaultValue;
-        switch (defaultValue)
+        if (parameterSymbol.Type.TypeKind == TypeKind.Enum)
         {
-            case null:
-                return " = null";
-            case string strValue:
-                return $" = \"{strValue.Replace("\"", "\\\"")}\"";
-            case bool boolValue:
-                return $" = {boolValue.ToString().ToLowerInvariant()}";
-            default:
+            var enumType = parameterSymbol.Type;
+            var fullyQualifiedEnumName = enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var defaultValue = parameterSymbol.ExplicitDefaultValue;
+
+            foreach (var fieldSymbol in enumType.GetMembers().OfType<IFieldSymbol>())
             {
-                if (parameterSymbol.Type.TypeKind == TypeKind.Enum)
+                if (fieldSymbol.HasConstantValue && fieldSymbol.ConstantValue.Equals(defaultValue))
                 {
-                    var enumType = parameterSymbol.Type;
-                    var fullyQualifiedEnumName = enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
-                    foreach (var fieldSymbol in enumType.GetMembers().OfType<IFieldSymbol>())
-                    {
-                        if (fieldSymbol.HasConstantValue && fieldSymbol.ConstantValue.Equals(defaultValue))
-                        {
-                            return $" = {fullyQualifiedEnumName}.{fieldSymbol.Name}";
-                        }
-                    }
-
-                    return $" = {fullyQualifiedEnumName}.{defaultValue}";
-                }
-                else
-                {
-                    return $" = {defaultValue}";
+                    return $" = {fullyQualifiedEnumName}.{fieldSymbol.Name}";
                 }
             }
+
+            return $" = ({fullyQualifiedEnumName})({defaultValue})";
+        }
+
+        var syntaxReference = parameterSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+        if (syntaxReference?.GetSyntax() is ParameterSyntax { Default.Value: { } literal })
+        {
+            return $" = {literal.ToFullString().Trim()}";
+        }
+        else
+        {
+            var workspace = new AdhocWorkspace();
+            var generator = SyntaxGenerator.GetGenerator(workspace, LanguageNames.CSharp);
+            var syntaxNode = generator.LiteralExpression(parameterSymbol.ExplicitDefaultValue);
+            var code = syntaxNode.ToFullString();
+
+            return $" = {code}";
         }
     }
 }
