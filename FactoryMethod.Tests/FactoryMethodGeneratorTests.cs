@@ -39,7 +39,7 @@ public class FactoryMethodGeneratorTests
         var result = driver.GetRunResult().Results.Single();
         var generatedSources = result.GeneratedSources;
 
-        // 0, 1번은 GeneratorFactoryMethodAttribute, IgnoreFactoryMethodAttribute
+        // 0, 1번은 AutoFactoryAttribute, IgnoreAutoFactoryAttribute
         var actual = generatedSources.Length > 2 ? generatedSources[2].SyntaxTree.ToString() : "";
 
         NUnit.Framework.Assert.That(actual, Is.EqualTo(expected));
@@ -53,7 +53,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
                 private readonly int _bar;
@@ -89,7 +89,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
                 internal Foo(int bar) { }
@@ -120,7 +120,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
                 public Foo() { }
@@ -139,7 +139,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
                 public Foo(int bar) { }
@@ -176,7 +176,7 @@ public class FactoryMethodGeneratorTests
 
             public class Bar { }
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
                 public Foo(Bar bar) { }
@@ -209,7 +209,7 @@ public class FactoryMethodGeneratorTests
 
             public partial class Foo
             {
-                [GenerateFactoryMethod]
+                [AutoFactory]
                 public Modifiers(ref int x, in string? y, params object[] values) { }
             }
             """,
@@ -240,7 +240,7 @@ public class FactoryMethodGeneratorTests
 
             public partial class OuterClass
             {
-                [GenerateFactoryMethod]
+                [AutoFactory]
                 public partial class NestedClass
                 {
                     public NestedClass(int value) { }
@@ -275,7 +275,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial struct Point
             {
                 public int X { get; }
@@ -313,7 +313,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial record Person(string FirstName, string LastName)
             {
             }
@@ -343,7 +343,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial record struct Person(string FirstName, string LastName)
             {
             }
@@ -373,7 +373,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Container<T>
             {
                 public T Value { get; }
@@ -413,7 +413,7 @@ public class FactoryMethodGeneratorTests
             {
                 public partial class Level2
                 {
-                    [GenerateFactoryMethod]
+                    [AutoFactory]
                     public partial class Level3
                     {
                         public Level3(string value) { }
@@ -452,7 +452,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod("Create")]
+            [AutoFactory("Create")]
             public partial class Foo
             {
                 public Foo(int bar) { }
@@ -485,10 +485,10 @@ public class FactoryMethodGeneratorTests
 
             public partial class Foo
             {
-                [GenerateFactoryMethod("FromInt")]
+                [AutoFactory("FromInt")]
                 public Foo(int bar) { }
 
-                [GenerateFactoryMethod("FromString")]
+                [AutoFactory("FromString")]
                 public Foo(string baz) { }
             }
             """,
@@ -519,12 +519,12 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod("Create")]
+            [AutoFactory("Create")]
             public partial class Foo
             {
                 public Foo(int bar) { }
 
-                [GenerateFactoryMethod("FromString")]
+                [AutoFactory("FromString")]
                 public Foo(string baz) { }
             }
             """,
@@ -555,10 +555,10 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
-                [GenerateFactoryMethod]
+                [AutoFactory]
                 private Foo(int bar) { }
 
                 public Foo(string baz) { }
@@ -591,7 +591,7 @@ public class FactoryMethodGeneratorTests
             """
             using Macaron.FactoryMethod;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class GlobalFoo
             {
                 public GlobalFoo(int bar) { }
@@ -619,7 +619,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
                 public Foo((int x, int y) point) { }
@@ -654,7 +654,7 @@ public class FactoryMethodGeneratorTests
 
             public class Bar { }
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
                 public Foo(List<int> numbers, Dictionary<string, Bar> items) { }
@@ -687,7 +687,7 @@ public class FactoryMethodGeneratorTests
 
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
                 public Foo([Required] string name, [Range(1, 100)] int age) { }
@@ -720,7 +720,7 @@ public class FactoryMethodGeneratorTests
 
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial record Foo([Required] string Name, [Range(1, 100)] int Age)
             {
             }
@@ -750,7 +750,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
                 public Foo(int bar = 42, string baz = "default") { }
@@ -783,7 +783,7 @@ public class FactoryMethodGeneratorTests
 
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class ComplexExample
             {
                 public ComplexExample(
@@ -825,7 +825,7 @@ public class FactoryMethodGeneratorTests
                 Admin
             }
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class User
             {
                 public User(string name, UserRole role = UserRole.Guest, UserRole? otherRole = null) { }
@@ -863,7 +863,7 @@ public class FactoryMethodGeneratorTests
                 Admin
             }
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class User
             {
                 public User(string name, UserRole role = (UserRole)(-1)) { }
@@ -894,7 +894,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Configuration
             {
                 public Configuration(string name, bool isEnabled = true, bool isVisible = false) { }
@@ -925,7 +925,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class NullableExample
             {
                 public NullableExample(int id, string? description = null) { }
@@ -956,7 +956,7 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod("")]
+            [AutoFactory("")]
             public partial class Foo
             {
                 public Foo(int bar) { }
@@ -987,13 +987,13 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [GenerateFactoryMethod]
+            [AutoFactory]
             public partial class Foo
             {
                 private readonly int _bar;
                 private readonly string _baz;
 
-                [IgnoreFactoryMethod]
+                [IgnoreAutoFactory]
                 public Foo(int bar)
                 {
                     _bar = bar;
@@ -1033,8 +1033,8 @@ public class FactoryMethodGeneratorTests
 
             public partial class Foo
             {
-                [GenerateFactoryMethod("Create")]
-                [IgnoreFactoryMethod]
+                [AutoFactory("Create")]
+                [IgnoreAutoFactory]
                 public Foo(int bar) { }
             }
             """,

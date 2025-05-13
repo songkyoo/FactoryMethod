@@ -7,35 +7,35 @@ namespace Macaron.FactoryMethod;
 
 internal static class Helpers
 {
-    private const string GenerateFactoryMethodAttributeDisplayString =
-        "Macaron.FactoryMethod.GenerateFactoryMethodAttribute";
+    private const string AutoFactoryAttributeDisplayString =
+        "Macaron.FactoryMethod.AutoFactoryAttribute";
 
-    private const string IgnoreFactoryMethodAttributeDisplayString =
-        "Macaron.FactoryMethod.IgnoreFactoryMethodAttribute";
+    private const string IgnoreAutoFactoryAttributeDisplayString =
+        "Macaron.FactoryMethod.IgnoreAutoFactoryAttribute";
 
-    public static bool IsGenerateFactoryMethodAttribute(INamedTypeSymbol? symbol)
+    public static bool IsAutoFactoryAttribute(INamedTypeSymbol? symbol)
     {
-        return symbol?.ToDisplayString() == GenerateFactoryMethodAttributeDisplayString;
+        return symbol?.ToDisplayString() == AutoFactoryAttributeDisplayString;
     }
 
-    public static bool IsIgnoreFactoryMethodAttribute(INamedTypeSymbol? symbol)
+    public static bool IsIgnoreAutoFactoryAttribute(INamedTypeSymbol? symbol)
     {
-        return symbol?.ToDisplayString() == IgnoreFactoryMethodAttributeDisplayString;
+        return symbol?.ToDisplayString() == IgnoreAutoFactoryAttributeDisplayString;
     }
 
-    public static bool HasGenerateFactoryMethodAttribute(IMethodSymbol methodSymbol)
+    public static bool HasAutoFactoryAttribute(IMethodSymbol methodSymbol)
     {
         return methodSymbol.GetAttributes().Any(attributeData =>
         {
-            return IsGenerateFactoryMethodAttribute(attributeData.AttributeClass);
+            return IsAutoFactoryAttribute(attributeData.AttributeClass);
         });
     }
 
-    public static bool HasIgnoreFactoryMethodAttribute(IMethodSymbol methodSymbol)
+    public static bool HasIgnoreAutoFactoryAttribute(IMethodSymbol methodSymbol)
     {
         return methodSymbol.GetAttributes().Any(attributeData =>
         {
-            return IsIgnoreFactoryMethodAttribute(attributeData.AttributeClass);
+            return IsIgnoreAutoFactoryAttribute(attributeData.AttributeClass);
         });
     }
 
@@ -57,7 +57,7 @@ internal static class Helpers
     {
         var attributeData = typeSymbol?
             .GetAttributes()
-            .FirstOrDefault(attributeData => IsGenerateFactoryMethodAttribute(attributeData.AttributeClass));
+            .FirstOrDefault(attributeData => IsAutoFactoryAttribute(attributeData.AttributeClass));
         return (
             hasAttribute: attributeData != null,
             methodName: TryGetGeneratedFactoryMethodName(attributeData, out var methodName) ? methodName : "Of"
