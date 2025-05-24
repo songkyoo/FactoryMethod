@@ -30,7 +30,12 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
             {
                 public string MethodName { get; }
 
-                public AutoFactoryAttribute(string methodName = "")
+                public AutoFactoryAttribute()
+                {
+                    MethodName = "";
+                }
+
+                public AutoFactoryAttribute(string methodName)
                 {
                     MethodName = methodName;
                 }
