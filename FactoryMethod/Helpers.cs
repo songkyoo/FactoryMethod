@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Editing;
 
 namespace Macaron.FactoryMethod;
 
@@ -199,14 +198,7 @@ internal static class Helpers
         {
             return $" = {literal.ToFullString().Trim()}";
         }
-        else
-        {
-            var workspace = new AdhocWorkspace();
-            var generator = SyntaxGenerator.GetGenerator(workspace, LanguageNames.CSharp);
-            var syntaxNode = generator.LiteralExpression(parameterSymbol.ExplicitDefaultValue);
-            var code = syntaxNode.ToFullString();
 
-            return $" = {code}";
-        }
+        throw new InvalidOperationException("Failed to get parameter default value.");
     }
 }
