@@ -1,25 +1,24 @@
 ﻿using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace Macaron.FactoryMethod;
 
 internal static class Helpers
 {
-    private const string AutoFactoryAttributeDisplayString =
-        "Macaron.FactoryMethod.AutoFactoryAttribute";
-
-    private const string IgnoreAutoFactoryAttributeDisplayString =
-        "Macaron.FactoryMethod.IgnoreAutoFactoryAttribute";
+    private const string AutoFactoryAttributeString = "Macaron.FactoryMethod.AutoFactoryAttribute";
+    private const string IgnoreAutoFactoryAttributeString = "Macaron.FactoryMethod.IgnoreAutoFactoryAttribute";
 
     public static bool IsAutoFactoryAttribute(INamedTypeSymbol? symbol)
     {
-        return symbol?.ToDisplayString() == AutoFactoryAttributeDisplayString;
+        return symbol?.ToDisplayString() == AutoFactoryAttributeString;
     }
 
     public static bool IsIgnoreAutoFactoryAttribute(INamedTypeSymbol? symbol)
     {
-        return symbol?.ToDisplayString() == IgnoreAutoFactoryAttributeDisplayString;
+        return symbol?.ToDisplayString() == IgnoreAutoFactoryAttributeString;
     }
 
     public static bool HasAutoFactoryAttribute(IMethodSymbol methodSymbol)
@@ -176,11 +175,20 @@ internal static class Helpers
             return "";
         }
 
+        var defaultValue = parameterSymbol.ExplicitDefaultValue;
+
+        if (defaultValue == null)
+        {
+            var parameterType = parameterSymbol.Type;
+            return !parameterType.IsValueType || parameterType.NullableAnnotation == NullableAnnotation.Annotated
+                ? " = null"
+                : " = default";
+        }
+
         if (parameterSymbol.Type.TypeKind == TypeKind.Enum)
         {
             var enumType = parameterSymbol.Type;
             var fullyQualifiedEnumName = enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var defaultValue = parameterSymbol.ExplicitDefaultValue;
 
             foreach (var fieldSymbol in enumType.GetMembers().OfType<IFieldSymbol>())
             {
@@ -193,12 +201,25 @@ internal static class Helpers
             return $" = ({fullyQualifiedEnumName})({defaultValue})";
         }
 
-        var syntaxReference = parameterSymbol.DeclaringSyntaxReferences.FirstOrDefault();
-        if (syntaxReference?.GetSyntax() is ParameterSyntax { Default.Value: { } literal })
+        var literalExpression = defaultValue switch
         {
-            return $" = {literal.ToFullString().Trim()}";
-        }
+            string value => LiteralExpression(StringLiteralExpression, Literal(value)),
+            char value => LiteralExpression(CharacterLiteralExpression, Literal(value)),
+            bool value => LiteralExpression(value ? TrueLiteralExpression : FalseLiteralExpression),
+            byte value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            sbyte value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            short value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            ushort value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            int value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            uint value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            long value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            ulong value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            float value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            double value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            decimal value => LiteralExpression(NumericLiteralExpression, Literal(value)),
+            _ => null,
+        };
 
-        throw new InvalidOperationException("Failed to get parameter default value.");
+        return $" = {literalExpression?.ToFullString() ?? "default"}";
     }
 }
