@@ -147,8 +147,17 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
     private static ImmutableArray<string> GenerateFactoryMethodCode(INamedTypeSymbol typeSymbol)
     {
         var (hasTypeAttribute, defaultMethodName) = GetTypeContext(typeSymbol);
-        var builder = ImmutableArray.CreateBuilder<string>();
+        var staticMethodSymbols = typeSymbol
+            .GetMembers()
+            .OfType<IMethodSymbol>()
+            .Where(methodSymbol => methodSymbol.IsStatic)
+            .GroupBy(static methodSymbol => methodSymbol.Name)
+            .ToImmutableDictionary(
+                keySelector: group => group.Key,
+                elementSelector: group => group.ToImmutableArray()
+            );
 
+        var builder = ImmutableArray.CreateBuilder<string>();
         foreach (var methodSymbol in FilterTargetConstructors(typeSymbol, hasTypeAttribute))
         {
             var parameters = methodSymbol.Parameters;
@@ -163,7 +172,12 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
                 : defaultMethodName;
             var accessModifier = methodSymbol.DeclaredAccessibility == Private
                 ? "public"
-                : methodSymbol.DeclaredAccessibility.ToString().ToLowerInvariant();
+                : methodSymbol.DeclaredAccessibility.ToString().ToLowerInvariant(); // public or internal
+
+            if (HasDuplicatedMethodSignature(staticMethodSymbols, methodName, parameters))
+            {
+                continue;
+            }
 
             var method = $"{accessModifier} static {typeSymbol.Name} {methodName}({paramList}) => new({argList});";
 
@@ -205,6 +219,52 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
                             HasAutoFactoryAttribute(methodSymbol);
                     }
                 });
+        }
+
+        static bool HasDuplicatedMethodSignature(
+            ImmutableDictionary<string, ImmutableArray<IMethodSymbol>> candidates,
+            string methodName,
+            ImmutableArray<IParameterSymbol> parameterSymbols
+        )
+        {
+            if (!candidates.TryGetValue(methodName, out var methodSymbols))
+            {
+                return false;
+            }
+
+            return methodSymbols.Any(methodSymbol =>
+            {
+                var comparer = SymbolEqualityComparer.Default;
+                var targetParameterSymbols = methodSymbol.Parameters;
+
+                if (parameterSymbols.Length != targetParameterSymbols.Length)
+                {
+                    return false;
+                }
+
+                for (var i = 0; i < targetParameterSymbols.Length; i++)
+                {
+                    var paramSymbol1 = parameterSymbols[i];
+                    var paramSymbol2 = targetParameterSymbols[i];
+
+                    if (!comparer.Equals(paramSymbol1.Type, paramSymbol2.Type))
+                    {
+                        return false;
+                    }
+
+                    if (paramSymbol1.RefKind != paramSymbol2.RefKind)
+                    {
+                        return false;
+                    }
+
+                    if (paramSymbol1.IsParams != paramSymbol2.IsParams)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
         }
         #endregion
     }

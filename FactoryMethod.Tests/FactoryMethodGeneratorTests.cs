@@ -50,6 +50,11 @@ public class FactoryMethodGeneratorTests
         NUnit.Framework.Assert.That(actual, Is.EqualTo(expected));
     }
 
+    // TODO 파라미터 네이밍 룰
+
+    // TODO 설정 파일 읽기
+        // 기본 메서드 이름
+
     [Test]
     public void When_ClassHasPublicConstructor_Then_GeneratesFactoryMethod()
     {
@@ -456,7 +461,7 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_TypeIsDeepNested_Then_GeneratesFactoryMethod()
+    public void When_TypeIsDeepNested_Then_GeneratesFactoryMethodReflectedNestedStructure()
     {
         Assert(
             sourceCode:
@@ -1123,6 +1128,27 @@ public class FactoryMethodGeneratorTests
                 [AutoFactory("Create")]
                 [IgnoreAutoFactory]
                 public Foo(int bar) { }
+            }
+            """,
+            expected:
+            ""
+        );
+    }
+
+    [Test]
+    public void When_FactoryMethodSignatureAlreadyExists_Then_DoseNotGenerateFactoryMethod()
+    {
+        Assert(
+            sourceCode:
+            """
+            namespace Macaron.FactoryMethod.Tests;
+
+            [AutoFactory("Create")]
+            public partial class Foo
+            {
+                public Foo(int bar) { }
+
+                public static Foo Create(int bar) => new(bar);
             }
             """,
             expected:
