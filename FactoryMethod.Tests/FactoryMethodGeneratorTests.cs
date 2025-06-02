@@ -47,13 +47,8 @@ public class FactoryMethodGeneratorTests
         // 0, 1번은 AutoFactoryAttribute, IgnoreAutoFactoryAttribute
         var actual = generatedSources.Length > 2 ? generatedSources[2].SyntaxTree.ToString() : "";
 
-        NUnit.Framework.Assert.That(actual, Is.EqualTo(expected));
+        NUnit.Framework.Assert.That(actual.ReplaceLineEndings(), Is.EqualTo(expected.ReplaceLineEndings()));
     }
-
-    // TODO 파라미터 네이밍 룰
-
-    // TODO 설정 파일 읽기
-        // 기본 메서드 이름
 
     [Test]
     public void When_ClassHasPublicConstructor_Then_GeneratesFactoryMethod()
