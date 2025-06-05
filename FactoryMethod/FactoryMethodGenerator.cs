@@ -30,12 +30,7 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
             {
                 public string MethodName { get; }
 
-                public AutoFactoryAttribute()
-                {
-                    MethodName = "";
-                }
-
-                public AutoFactoryAttribute(string methodName)
+                public AutoFactoryAttribute(string methodName = "")
                 {
                     MethodName = methodName;
                 }
@@ -215,7 +210,7 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
                     else
                     {
                         return
-                            declaredAccessibility is Public or Internal &&
+                            declaredAccessibility is Public or Internal or Private &&
                             HasAutoFactoryAttribute(methodSymbol);
                     }
                 });
