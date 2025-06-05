@@ -31,11 +31,6 @@ public class FactoryMethodGeneratorTests
             )
         );
 
-        foreach (var diagnostic in compilation.GetDiagnostics())
-        {
-            Console.WriteLine(diagnostic);
-        }
-
         var generator = new FactoryMethodGenerator();
         var driver = CSharpGeneratorDriver
             .Create(generator)
