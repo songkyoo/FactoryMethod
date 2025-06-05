@@ -6,62 +6,8 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace Macaron.FactoryMethod;
 
-internal static class Helpers
+internal static class ParameterStringHelpers
 {
-    private const string AutoFactoryAttributeString = "Macaron.FactoryMethod.AutoFactoryAttribute";
-    private const string IgnoreAutoFactoryAttributeString = "Macaron.FactoryMethod.IgnoreAutoFactoryAttribute";
-
-    public static bool IsAutoFactoryAttribute(INamedTypeSymbol? symbol)
-    {
-        return symbol?.ToDisplayString() == AutoFactoryAttributeString;
-    }
-
-    public static bool IsIgnoreAutoFactoryAttribute(INamedTypeSymbol? symbol)
-    {
-        return symbol?.ToDisplayString() == IgnoreAutoFactoryAttributeString;
-    }
-
-    public static bool HasAutoFactoryAttribute(IMethodSymbol methodSymbol)
-    {
-        return methodSymbol.GetAttributes().Any(attributeData =>
-        {
-            return IsAutoFactoryAttribute(attributeData.AttributeClass);
-        });
-    }
-
-    public static bool HasIgnoreAutoFactoryAttribute(IMethodSymbol methodSymbol)
-    {
-        return methodSymbol.GetAttributes().Any(attributeData =>
-        {
-            return IsIgnoreAutoFactoryAttribute(attributeData.AttributeClass);
-        });
-    }
-
-    public static bool TryGetGeneratedFactoryMethodName(AttributeData? attributeData, out string methodName)
-    {
-        if (attributeData?.ConstructorArguments is [{ Value: string methodName2 }])
-        {
-            methodName = methodName2.Trim();
-            return !string.IsNullOrEmpty(methodName);
-        }
-        else
-        {
-            methodName = "";
-            return false;
-        }
-    }
-
-    public static (bool hasAttribute, string methodName) GetTypeContext(INamedTypeSymbol? typeSymbol)
-    {
-        var attributeData = typeSymbol?
-            .GetAttributes()
-            .FirstOrDefault(attributeData => IsAutoFactoryAttribute(attributeData.AttributeClass));
-        return (
-            hasAttribute: attributeData != null,
-            methodName: TryGetGeneratedFactoryMethodName(attributeData, out var methodName) ? methodName : "Of"
-        );
-    }
-
     public static string GetParameterString(IParameterSymbol parameterSymbol)
     {
         var attributesString = GetParameterAttributesString(parameterSymbol);
@@ -192,7 +138,9 @@ internal static class Helpers
 
             foreach (var fieldSymbol in enumType.GetMembers().OfType<IFieldSymbol>())
             {
-                if (fieldSymbol.HasConstantValue && fieldSymbol.ConstantValue.Equals(defaultValue))
+                if (fieldSymbol is { IsStatic: true, HasConstantValue: true } &&
+                    fieldSymbol.ConstantValue.Equals(defaultValue)
+                )
                 {
                     return $" = {fullyQualifiedEnumName}.{fieldSymbol.Name}";
                 }
