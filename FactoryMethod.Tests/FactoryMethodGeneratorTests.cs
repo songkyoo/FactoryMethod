@@ -835,7 +835,7 @@ public class FactoryMethodGeneratorTests
             [AutoFactory]
             public partial class Foo
             {
-                public Foo(int bar = 42, string baz = "default") { }
+                public Foo(int bar = 42, string? baz = "default") { }
             }
             """,
             expected:
@@ -847,7 +847,7 @@ public class FactoryMethodGeneratorTests
             {
                 partial class Foo
                 {
-                    public static Foo Of(int bar = 42, string baz = "default") => new(bar, baz);
+                    public static Foo Of(int bar = 42, string? baz = "default") => new(bar, baz);
                 }
             }
 
