@@ -1,12 +1,23 @@
 # Factory Method
 
-타입이나 생성자에 어트리뷰트를 선언하여 생성자에 대한 정적 팩토리 메서드를 자동으로 생성하는 C# 소스 제네레이터입니다.
+타입이나 생성자에 어트리뷰트를 적용하여 생성자에 대한 정적 팩토리 메서드를 자동으로 생성하는 C# 소스 제네레이터입니다.
+
+## 빌드하기
+
+다음과 같은 순서로 명령을 수행하여 NuGet 패키지를 생성할 수 있습니다.
+
+```shell
+dotnet build -c Release
+dotnet pack ./FactoryMethod/FactoryMethod.csproj -c Release
+```
+
+`./FactoryMethod/bin/Release/` 폴더에 `nupkg` 확장자를 가지는 패키지가 생성됩니다.
 
 ## 사용법
 
 ### 타입에 `AutoFactory` 어트리뷰트 선언하기
 
-타입에 `AutoFactory` 어트리뷰트를 선언하면 `Of` 이름을 가진 팩토리 메서드를 생성합니다. 생성 대상의 조건은
+타입을 `partial`로 선언하고 `AutoFactory` 어트리뷰트를 적용하면 `Of` 이름을 가진 팩토리 메서드를 생성합니다. 생성 대상의 조건은
 
 1. 매개 변수가 존재하고
 2. 접근 제한자가 `public`, `internal`
@@ -47,7 +58,7 @@ partial class Foo
 }
 ```
 
-만약 이미 동일한 시그니처의 메서드가 존재한다면 해당 메서드는 생성하지 않습니다. 이 경우 반환 값의 타입은 고려하지 않습니다.
+만약 이미 동일한 시그니처의 정적 메서드가 존재한다면 해당 메서드는 생성하지 않습니다. 이 경우 반환 값의 타입은 고려하지 않습니다.
 
 ```csharp
 using Macaron.FactoryMethod;
@@ -105,7 +116,7 @@ partial record Foo
 
 ### 특정 생성자를 대상에서 제외하기
 
-`IgnoreAutoFactory` 어트리뷰트를 생성자에 선언하면 팩토리 메서드 생성 대상에서 제외됩니다.
+`IgnoreAutoFactory` 어트리뷰트를 생성자에 적용하면 팩토리 메서드 생성 대상에서 제외됩니다.
 
 ```csharp
 using Macaron.FactoryMethod;
@@ -134,7 +145,7 @@ partial class Foo
 
 ### 생성자에 `AutoFactory` 어트리뷰트 선언하기
 
-타입의 모든 생성자가 아니라 특정 생성자만 `AutoFactory`를 사용하여 팩토리 메서드를 생성할 수 있습니다. 이 경우 생성자의 접근 제한자가 `private`인 경우에도 팩토리 메서드를 생성합니다. 생성되는 팩토리 메서드의 접근 제한자는 `public`입니다.
+타입의 모든 생성자가 아니라 특정 생성자만 `AutoFactory`를 적용하여 팩토리 메서드를 생성할 수 있습니다. 이 경우 생성자의 접근 제한자가 `private`인 경우에도 팩토리 메서드를 생성합니다. 생성되는 팩토리 메서드의 접근 제한자는 `public`입니다.
 
 ```csharp
 using Macaron.FactoryMethod;
@@ -163,7 +174,7 @@ partial class Foo
 }
 ```
 
-타입과 생성자에 동시에 선언할 수 있습니다.
+타입과 생성자에 동시에 적용할 수 있습니다.
 
 ```csharp
 using Macaron.FactoryMethod;
@@ -218,7 +229,7 @@ partial class Foo
 }
 ```
 
-개별 생성자에 대해서 `AutoFactory`를 선언하여 타입에 선언된 어트리뷰트의 설정을 변경할 수 있습니다.
+개별 생성자에 대해서 `AutoFactory`를 적용하여 타입에 선언된 어트리뷰트의 설정을 변경할 수 있습니다.
 
 ```csharp
 using Macaron.FactoryMethod;
@@ -246,7 +257,3 @@ partial class Foo
     public static Foo Of(int bar, string baz) => new(bar, baz);
 }
 ```
-
-## 라이선스
-
-이 프로젝트는 [Unlicense](LICENSE) 하에 배포됩니다.
