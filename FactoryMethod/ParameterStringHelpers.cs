@@ -3,6 +3,8 @@ using Microsoft.CodeAnalysis;
 
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using static Microsoft.CodeAnalysis.SymbolDisplayFormat;
+using static Microsoft.CodeAnalysis.SymbolDisplayMiscellaneousOptions;
 
 namespace Macaron.FactoryMethod;
 
@@ -12,19 +14,14 @@ internal static class ParameterStringHelpers
     {
         var attributesString = GetParameterAttributesString(parameterSymbol);
         var modifiersString = GetParameterModifierString(parameterSymbol);
-        var typeString = parameterSymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var nullabilityString = GetNullableAnnotationString(parameterSymbol, typeString);
+        var typeString = parameterSymbol.Type.ToDisplayString(FullyQualifiedFormat.WithMiscellaneousOptions(
+            IncludeNullableReferenceTypeModifier |
+            UseSpecialTypes
+        ));
         var nameString = GetCamelCaseName(parameterSymbol.Name);
         var defaultValueString = GetParameterDefaultValueString(parameterSymbol);
 
-        return $"{attributesString}{modifiersString}{typeString}{nullabilityString} {nameString}{defaultValueString}";
-
-        #region Local Functions
-        static string GetNullableAnnotationString(IParameterSymbol parameterSymbol, string typeString) =>
-            parameterSymbol.NullableAnnotation == NullableAnnotation.Annotated && !typeString.EndsWith("?")
-                ? "?"
-                : "";
-        #endregion
+        return $"{attributesString}{modifiersString}{typeString} {nameString}{defaultValueString}";
     }
 
     public static string GetArgumentString(IParameterSymbol parameterSymbol)
@@ -63,7 +60,7 @@ internal static class ParameterStringHelpers
             }
 
             var attributeBuilder = new StringBuilder(
-                $"[{attribute.AttributeClass.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}"
+                $"[{attribute.AttributeClass.ToDisplayString(FullyQualifiedFormat)}"
             );
 
             if (attribute.ConstructorArguments.Length > 0 || attribute.NamedArguments.Length > 0)
@@ -134,7 +131,7 @@ internal static class ParameterStringHelpers
         if (parameterSymbol.Type.TypeKind == TypeKind.Enum)
         {
             var enumType = parameterSymbol.Type;
-            var fullyQualifiedEnumName = enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var fullyQualifiedEnumName = enumType.ToDisplayString(FullyQualifiedFormat);
 
             foreach (var fieldSymbol in enumType.GetMembers().OfType<IFieldSymbol>())
             {
