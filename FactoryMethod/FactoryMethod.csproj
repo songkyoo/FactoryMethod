@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <AssemblyName>Macaron.FactoryMethod</AssemblyName>
     <DevelopmentDependency>true</DevelopmentDependency>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -18,7 +19,7 @@
 
   <PropertyGroup>
     <PackageId>Macaron.FactoryMethod</PackageId>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <Authors>Gyu Song</Authors>
     <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
@@ -26,7 +27,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <None Include="bin\Release\netstandard2.0\FactoryMethod.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" />
+    <None Include="bin\Release\netstandard2.0\Macaron.FactoryMethod.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" />
   </ItemGroup>
 
   <ItemGroup>
