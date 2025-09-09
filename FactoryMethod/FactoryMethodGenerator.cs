@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.Text;
 using static Macaron.FactoryMethod.ParameterStringHelpers;
 using static Macaron.FactoryMethod.SourceGenerationHelpers;
 using static Microsoft.CodeAnalysis.Accessibility;
+using static Microsoft.CodeAnalysis.SymbolDisplayTypeQualificationStyle;
 
 namespace Macaron.FactoryMethod;
 
@@ -137,7 +138,12 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var method = $"{accessModifier} static {typeSymbol.Name} {methodName}({paramList}) => new({argList});";
+            var returnTypeDisplayFormat = new SymbolDisplayFormat(
+                typeQualificationStyle: NameOnly,
+                genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters
+            );
+
+            var method = $"{accessModifier} static {typeSymbol.ToDisplayString(returnTypeDisplayFormat)} {methodName}({paramList}) => new({argList});";
 
             if (builder.Count > 0)
             {
