@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
@@ -18,7 +19,7 @@ internal static class ParameterStringHelpers
             IncludeNullableReferenceTypeModifier |
             UseSpecialTypes
         ));
-        var nameString = GetCamelCaseName(parameterSymbol.Name);
+        var nameString = GetParameterName(parameterSymbol);
         var defaultValueString = GetParameterDefaultValueString(parameterSymbol);
 
         return $"{attributesString}{modifiersString}{typeString} {nameString}{defaultValueString}";
@@ -34,7 +35,21 @@ internal static class ParameterStringHelpers
             _ => ""
         };
 
-        return $"{prefix}{GetCamelCaseName(parameterSymbol.Name)}";
+        return $"{prefix}{GetParameterName(parameterSymbol)}";
+    }
+
+    private static string GetParameterName(IParameterSymbol parameterSymbol)
+    {
+        return EscapeIdentifier(GetCamelCaseName(parameterSymbol.Name));
+    }
+
+    private static string EscapeIdentifier(string name)
+    {
+        return
+            SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None ||
+            SyntaxFacts.GetContextualKeywordKind(name) != SyntaxKind.None
+                ? $"@{name}"
+                : name;
     }
 
     private static string GetCamelCaseName(string name)
