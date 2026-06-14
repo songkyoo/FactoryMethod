@@ -17,12 +17,7 @@ dotnet pack ./FactoryMethod/FactoryMethod.csproj -c Release
 
 ### 타입에 `AutoFactory` 어트리뷰트 선언하기
 
-타입을 `partial`로 선언하고 `AutoFactory` 어트리뷰트를 적용하면 `Of` 이름을 가진 팩토리 메서드를 생성합니다. 생성 대상의 조건은
-
-1. 매개 변수가 존재하고
-2. 접근 제한자가 `public`, `internal`
-
-인 경우입니다.
+타입을 `partial`로 선언하고 `AutoFactory` 어트리뷰트를 적용하면 매개 변수가 없는 생성자에는 `New`, 매개 변수가 있는 생성자에는 `Of` 이름을 가진 팩토리 메서드를 생성합니다. 생성 대상의 조건은 접근 제한자가 `public`, `internal`인 경우입니다.
 
 ```csharp
 using Macaron.FactoryMethod;
@@ -50,6 +45,8 @@ public partial class Foo
 
 partial class Foo
 {
+    public static Foo New() => new();
+
     public static Foo Of(int bar) => new(bar);
 
     public static Foo Of(int bar, string baz) => new(bar, baz);
@@ -205,7 +202,7 @@ partial class Foo
 
 ### 생성되는 정적 메서드 이름 변경하기
 
-`AutoFactory` 어트리뷰트의 `methodName` 값을 사용하여 생성되는 팩토리 메서드 이름을 변경할 수 있습니다.
+`AutoFactory` 어트리뷰트의 `methodName` 값을 사용하여 생성되는 팩토리 메서드 이름을 변경할 수 있습니다. 이 설정은 기본 생성자의 `New` 이름에도 동일하게 적용됩니다.
 
 ```csharp
 using Macaron.FactoryMethod;

@@ -63,6 +63,7 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
     private const string IgnoreAutoFactoryAttributeString = "Macaron.FactoryMethod.IgnoreAutoFactoryAttribute";
 
     private const string DefaultMethodName = "Of";
+    private const string DefaultParameterlessMethodName = "New";
     #endregion
 
     #region Static Methods
@@ -105,7 +106,7 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
 
     private static ImmutableArray<string> GenerateFactoryMethodCode(INamedTypeSymbol typeSymbol)
     {
-        var (hasTypeAttribute, defaultMethodName) = GetTypeContext(typeSymbol);
+        var (hasTypeAttribute, typeMethodName) = GetTypeContext(typeSymbol);
         var staticMethodSymbols = typeSymbol
             .GetMembers()
             .OfType<IMethodSymbol>()
@@ -128,7 +129,7 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
                 .FirstOrDefault(attributeData => IsAutoFactoryAttribute(attributeData.AttributeClass));
             var methodName = TryGetGeneratedFactoryMethodName(attributeData, out var methodName2)
                 ? methodName2
-                : defaultMethodName;
+                : typeMethodName ?? (parameters.IsEmpty ? DefaultParameterlessMethodName : DefaultMethodName);
             var accessModifier = methodSymbol.DeclaredAccessibility == Private
                 ? "public"
                 : methodSymbol.DeclaredAccessibility.ToString().ToLowerInvariant(); // public or internal
@@ -160,7 +161,6 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
         {
             return typeSymbol
                 .InstanceConstructors
-                .Where(methodSymbol => methodSymbol.Parameters.Length > 0)
                 .Where(methodSymbol =>
                 {
                     if (HasIgnoreAutoFactoryAttribute(methodSymbol))
@@ -233,7 +233,7 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
         #endregion
     }
 
-    private static (bool HasAttribute, string MethodName) GetTypeContext(INamedTypeSymbol? typeSymbol)
+    private static (bool HasAttribute, string? MethodName) GetTypeContext(INamedTypeSymbol? typeSymbol)
     {
         var attributeData = typeSymbol?
             .GetAttributes()
@@ -242,7 +242,7 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
             HasAttribute: attributeData != null,
             MethodName: TryGetGeneratedFactoryMethodName(attributeData, out var methodName)
                 ? methodName
-                : DefaultMethodName
+                : null
         );
     }
 
