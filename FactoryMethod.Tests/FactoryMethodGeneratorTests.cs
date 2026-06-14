@@ -39,8 +39,8 @@ public class FactoryMethodGeneratorTests
         var result = driver.GetRunResult().Results.Single();
         var generatedSources = result.GeneratedSources;
 
-        // 0, 1번은 AutoFactoryAttribute, IgnoreAutoFactoryAttribute
-        var actual = generatedSources.Length > 2 ? generatedSources[2].SyntaxTree.ToString() : "";
+        // 0, 1, 2번은 AutoFactoryAttribute, FactoryMethodAttribute, IgnoreAutoFactoryAttribute
+        var actual = generatedSources.Length > 3 ? generatedSources[3].SyntaxTree.ToString() : "";
 
         NUnit.Framework.Assert.That(actual.ReplaceLineEndings(), Is.EqualTo(expected.ReplaceLineEndings()));
     }
@@ -87,7 +87,7 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_ClassHasPrivateConstructorWithAutoFactoryAttribute_Then_GeneratesFactoryMethod()
+    public void When_AutoFactoryTypeHasPrivateConstructorWithFactoryMethodAttribute_Then_GeneratesFactoryMethod()
     {
         Assert(
             sourceCode:
@@ -104,7 +104,7 @@ public class FactoryMethodGeneratorTests
                     _bar = bar;
                 }
 
-                [AutoFactory]
+                [FactoryMethod]
                 private Foo(int bar, int baz)
                 {
                     _bar = bar;
@@ -263,7 +263,7 @@ public class FactoryMethodGeneratorTests
 
             public partial class Foo
             {
-                [AutoFactory]
+                [FactoryMethod]
                 private Foo() { }
             }
             """,
@@ -362,7 +362,7 @@ public class FactoryMethodGeneratorTests
 
             public partial class Foo
             {
-                [AutoFactory]
+                [FactoryMethod]
                 public Modifiers(ref int x, in string? y, params object[] values) { }
             }
             """,
@@ -641,16 +641,20 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_SpecifiedInTypeAttribute_Then_UsesCustomMethodName()
+    public void When_FactoryMethodAttributesArePresentOnAutoFactoryType_Then_ChangesMethodNames()
     {
         Assert(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [AutoFactory("Create")]
+            [AutoFactory]
             public partial class Foo
             {
+                [FactoryMethod("CreateEmpty")]
+                public Foo() { }
+
+                [FactoryMethod("Create")]
                 public Foo(int bar) { }
             }
             """,
@@ -663,6 +667,8 @@ public class FactoryMethodGeneratorTests
             {
                 partial class Foo
                 {
+                    public static Foo CreateEmpty() => new();
+
                     public static Foo Create(int bar) => new(bar);
                 }
             }
@@ -672,17 +678,21 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_DefaultConstructorAndTypeAttributeHaveCustomMethodName_Then_UsesCustomMethodName()
+    public void When_FactoryMethodNameIsEmptyOnAutoFactoryType_Then_UsesDefaultNames()
     {
         Assert(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [AutoFactory("Create")]
+            [AutoFactory]
             public partial class Foo
             {
+                [FactoryMethod]
                 public Foo() { }
+
+                [FactoryMethod("")]
+                public Foo(int bar) { }
             }
             """,
             expected:
@@ -694,7 +704,9 @@ public class FactoryMethodGeneratorTests
             {
                 partial class Foo
                 {
-                    public static Foo Create() => new();
+                    public static Foo New() => new();
+
+                    public static Foo Of(int bar) => new(bar);
                 }
             }
 
@@ -712,10 +724,10 @@ public class FactoryMethodGeneratorTests
 
             public partial class Foo
             {
-                [AutoFactory("FromInt")]
+                [FactoryMethod("FromInt")]
                 public Foo(int bar) { }
 
-                [AutoFactory("FromString")]
+                [FactoryMethod("FromString")]
                 public Foo(string baz) { }
             }
             """,
@@ -746,12 +758,12 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [AutoFactory("Create")]
+            [AutoFactory]
             public partial class Foo
             {
                 public Foo(int bar) { }
 
-                [AutoFactory("FromString")]
+                [FactoryMethod("FromString")]
                 public Foo(string baz) { }
             }
             """,
@@ -764,7 +776,7 @@ public class FactoryMethodGeneratorTests
             {
                 partial class Foo
                 {
-                    public static Foo Create(int bar) => new(bar);
+                    public static Foo Of(int bar) => new(bar);
 
                     public static Foo FromString(string baz) => new(baz);
                 }
@@ -775,7 +787,7 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_PrivateConstructorHasAttribute_Then_GeneratesFactoryMethod()
+    public void When_PrivateConstructorHasNamedFactoryMethodOnAutoFactoryType_Then_GeneratesFactoryMethod()
     {
         Assert(
             sourceCode:
@@ -785,7 +797,7 @@ public class FactoryMethodGeneratorTests
             [AutoFactory]
             public partial class Foo
             {
-                [AutoFactory]
+                [FactoryMethod("FromInt")]
                 private Foo(int bar) { }
 
                 public Foo(string baz) { }
@@ -800,7 +812,7 @@ public class FactoryMethodGeneratorTests
             {
                 partial class Foo
                 {
-                    public static Foo Of(int bar) => new(bar);
+                    public static Foo FromInt(int bar) => new(bar);
 
                     public static Foo Of(string baz) => new(baz);
                 }
@@ -820,7 +832,7 @@ public class FactoryMethodGeneratorTests
 
             public partial class Foo
             {
-                [AutoFactory]
+                [FactoryMethod]
                 private Foo(int bar) { }
 
                 public Foo(string baz) { }
@@ -1249,9 +1261,9 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [AutoFactory("")]
             public partial class Foo
             {
+                [FactoryMethod("")]
                 public Foo(int bar) { }
             }
             """,
@@ -1344,15 +1356,48 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
+            [AutoFactory]
             public partial class Foo
             {
-                [AutoFactory("Create")]
+                [FactoryMethod("Create")]
                 [IgnoreAutoFactory]
                 public Foo(int bar) { }
             }
             """,
             expected:
             ""
+        );
+    }
+
+    [Test]
+    public void When_IgnoreAutoFactoryIsUsedWithoutAutoFactory_Then_DoesNotIgnoreFactoryMethod()
+    {
+        Assert(
+            sourceCode:
+            """
+            namespace Macaron.FactoryMethod.Tests;
+
+            public partial class Foo
+            {
+                [FactoryMethod("Create")]
+                [IgnoreAutoFactory]
+                public Foo(int bar) { }
+            }
+            """,
+            expected:
+            """
+            // <auto-generated />
+            #nullable enable
+
+            namespace Macaron.FactoryMethod.Tests
+            {
+                partial class Foo
+                {
+                    public static Foo Create(int bar) => new(bar);
+                }
+            }
+
+            """
         );
     }
 
@@ -1364,9 +1409,10 @@ public class FactoryMethodGeneratorTests
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [AutoFactory("Create")]
+            [AutoFactory]
             public partial class Foo
             {
+                [FactoryMethod("Create")]
                 public Foo(int bar) { }
 
                 public static Foo Create(int bar) => new(bar);
