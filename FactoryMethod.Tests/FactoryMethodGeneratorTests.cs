@@ -8,7 +8,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_ClassHasPublicConstructor_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -47,14 +47,14 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_AutoFactoryTypeHasPrivateConstructorWithFactoryMethodAttribute_Then_GeneratesFactoryMethod()
+    public void When_IncludePrivateConstructorsIsTrue_Then_GeneratesNamedFactoryMethodForPrivateConstructor()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [AutoFactory]
+            [AutoFactory(IncludePrivateConstructors = true)]
             public partial class Foo
             {
                 private readonly int _bar;
@@ -64,7 +64,7 @@ public class FactoryMethodGeneratorTests
                     _bar = bar;
                 }
 
-                [FactoryMethod]
+                [FactoryMethodName("FromValues")]
                 private Foo(int bar, int baz)
                 {
                     _bar = bar;
@@ -82,7 +82,7 @@ public class FactoryMethodGeneratorTests
                 {
                     public static Foo Of(int bar) => new(bar);
 
-                    public static Foo Of(int bar, int baz) => new(bar, baz);
+                    public static Foo FromValues(int bar, int baz) => new(bar, baz);
                 }
             }
 
@@ -93,7 +93,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_ClassHasInternalConstructor_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -124,7 +124,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_ClassHasDefaultConstructor_Then_GeneratesNewFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -155,7 +155,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_ClassHasImplicitDefaultConstructor_Then_GeneratesNewFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -185,7 +185,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_DefaultConstructorIsInternal_Then_GeneratesInternalNewFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -214,16 +214,16 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_PrivateDefaultConstructorHasAttribute_Then_GeneratesPublicNewFactoryMethod()
+    public void When_IncludePrivateConstructorsIsTrueAndConstructorIsPrivate_Then_GeneratesPublicNewFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
 
+            [AutoFactory(IncludePrivateConstructors = true)]
             public partial class Foo
             {
-                [FactoryMethod]
                 private Foo() { }
             }
             """,
@@ -245,9 +245,32 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
+    public void When_IncludePrivateConstructorsIsTrue_Then_DoesNotGenerateForProtectedConstructorAccessibilities()
+    {
+        AssertGeneratedCode(
+            sourceCode:
+            """
+            namespace Macaron.FactoryMethod.Tests;
+
+            [AutoFactory(IncludePrivateConstructors = true)]
+            public partial class Foo
+            {
+                protected Foo(int value) { }
+
+                protected internal Foo(string value) { }
+
+                private protected Foo(bool value) { }
+            }
+            """,
+            expected:
+            ""
+        );
+    }
+
+    [Test]
     public void When_ClassHasMultipleConstructors_Then_GeneratesFactoryMethodForEach()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -282,7 +305,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_ParameterTypesAreInSameNamespace_Then_UsesFullyQualifiedTypeNames()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -315,15 +338,15 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_GeneratingFactoryMethod_Then_PreservesParameterModifiersAndNullability()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
 
+            [AutoFactory]
             public partial class Foo
             {
-                [FactoryMethod]
-                public Modifiers(ref int x, in string? y, params object[] values) { }
+                public Foo(ref int x, in string? y, params object[] values) { }
             }
             """,
             expected:
@@ -346,7 +369,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_TypeIsNestedClass_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -383,7 +406,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_TypeIsStruct_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -423,7 +446,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_TypeIsRecord_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -453,7 +476,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_TypeIsRecordStruct_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -485,7 +508,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_TypeIsGeneric_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -521,7 +544,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_TypeHasMultipleGenericParameters_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -560,7 +583,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_TypeIsDeepNested_Then_GeneratesFactoryMethodReflectedNestedStructure()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -601,9 +624,9 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_FactoryMethodAttributesArePresentOnAutoFactoryType_Then_ChangesMethodNames()
+    public void When_FactoryMethodNameAttributesArePresentOnAutoFactoryType_Then_ChangesMethodNames()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -611,10 +634,10 @@ public class FactoryMethodGeneratorTests
             [AutoFactory]
             public partial class Foo
             {
-                [FactoryMethod("CreateEmpty")]
+                [FactoryMethodName("CreateEmpty")]
                 public Foo() { }
 
-                [FactoryMethod("Create")]
+                [FactoryMethodName("Create")]
                 public Foo(int bar) { }
             }
             """,
@@ -638,9 +661,9 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_FactoryMethodNameIsEmptyOnAutoFactoryType_Then_UsesDefaultNames()
+    public void When_FactoryMethodNameIsEmpty_Then_UsesDefaultName()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -648,10 +671,9 @@ public class FactoryMethodGeneratorTests
             [AutoFactory]
             public partial class Foo
             {
-                [FactoryMethod]
                 public Foo() { }
 
-                [FactoryMethod("")]
+                [FactoryMethodName("")]
                 public Foo(int bar) { }
             }
             """,
@@ -675,19 +697,20 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_SpecifiedInConstructorAttribute_Then_UsesCustomMethodName()
+    public void When_FactoryMethodNamesAreSpecified_Then_UsesCustomMethodNames()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
 
+            [AutoFactory]
             public partial class Foo
             {
-                [FactoryMethod("FromInt")]
+                [FactoryMethodName("FromInt")]
                 public Foo(int bar) { }
 
-                [FactoryMethod("FromString")]
+                [FactoryMethodName("FromString")]
                 public Foo(string baz) { }
             }
             """,
@@ -711,9 +734,9 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_BothTypeAndConstructorAttributesArePresent_Then_PrioritizesConstructorAttribute()
+    public void When_FactoryMethodNameIsSpecified_Then_OverridesDefaultName()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -723,7 +746,7 @@ public class FactoryMethodGeneratorTests
             {
                 public Foo(int bar) { }
 
-                [FactoryMethod("FromString")]
+                [FactoryMethodName("FromString")]
                 public Foo(string baz) { }
             }
             """,
@@ -747,9 +770,9 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_PrivateConstructorHasNamedFactoryMethodOnAutoFactoryType_Then_GeneratesFactoryMethod()
+    public void When_PrivateConstructorHasFactoryMethodNameWithoutIncludeOption_Then_DoesNotGenerateForPrivateConstructor()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -757,7 +780,7 @@ public class FactoryMethodGeneratorTests
             [AutoFactory]
             public partial class Foo
             {
-                [FactoryMethod("FromInt")]
+                [FactoryMethodName("FromInt")]
                 private Foo(int bar) { }
 
                 public Foo(string baz) { }
@@ -772,8 +795,6 @@ public class FactoryMethodGeneratorTests
             {
                 partial class Foo
                 {
-                    public static Foo FromInt(int bar) => new(bar);
-
                     public static Foo Of(string baz) => new(baz);
                 }
             }
@@ -783,42 +804,30 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_PrivateConstructorHasAttributeWithoutTypeAttribute_Then_GeneratesFactoryMethod()
+    public void When_FactoryMethodNameIsUsedWithoutAutoFactory_Then_DoesNotGenerateFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
 
             public partial class Foo
             {
-                [FactoryMethod]
+                [FactoryMethodName("FromInt")]
                 private Foo(int bar) { }
 
                 public Foo(string baz) { }
             }
             """,
             expected:
-            """
-            // <auto-generated />
-            #nullable enable
-
-            namespace Macaron.FactoryMethod.Tests
-            {
-                partial class Foo
-                {
-                    public static Foo Of(int bar) => new(bar);
-                }
-            }
-
-            """
+            ""
         );
     }
 
     [Test]
     public void When_TypeHasNoNamespace_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             using Macaron.FactoryMethod;
@@ -846,7 +855,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_ConstructorHasTupleParameters_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -877,7 +886,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_ConstructorHasGenericParameters_Then_GeneratesFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             using System.Collections.Generic;
@@ -912,7 +921,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_GeneratingFactoryMethod_Then_PreservesParameterAttributes()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             using System.ComponentModel.DataAnnotations;
@@ -945,7 +954,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_GeneratingFactoryMethodForRecord_Then_PreservesParameterAttributes()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             using System.ComponentModel.DataAnnotations;
@@ -977,7 +986,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_ConstructorHasDefaultParameters_Then_PreservesDefaultValues()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -1008,7 +1017,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_GeneratingFactoryMethod_Then_HandlesComplexAttributesAndDefaults()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             using System.ComponentModel.DataAnnotations;
@@ -1045,7 +1054,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_GeneratingFactoryMethod_Then_PreservesEnumDefaultValues()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -1083,7 +1092,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_GeneratingFactoryMethod_Then_PreservesIntegerEnumDefaultValues()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -1121,7 +1130,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_GeneratingFactoryMethod_Then_PreservesPrimitiveTypeDefaultValues()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -1152,7 +1161,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_GeneratingFactoryMethod_Then_PreservesSpecialTypeDefaultValues()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             using System;
@@ -1185,7 +1194,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_GeneratingFactoryMethod_Then_PreservesNullDefaultValue()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -1214,40 +1223,28 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_SpecifiedMethodNameIsEmpty_Then_UsesDefaultOfName()
+    public void When_EmptyFactoryMethodNameIsUsedWithoutAutoFactory_Then_DoesNotGenerateFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
 
             public partial class Foo
             {
-                [FactoryMethod("")]
+                [FactoryMethodName("")]
                 public Foo(int bar) { }
             }
             """,
             expected:
-            """
-            // <auto-generated />
-            #nullable enable
-
-            namespace Macaron.FactoryMethod.Tests
-            {
-                partial class Foo
-                {
-                    public static Foo Of(int bar) => new(bar);
-                }
-            }
-
-            """
+            ""
         );
     }
 
     [Test]
     public void When_ConstructorHasIgnoreAttribute_Then_DoesNotGenerateFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -1291,7 +1288,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_DefaultConstructorHasIgnoreAttribute_Then_DoesNotGenerateFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -1309,19 +1306,19 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_ConstructorHasBothAttributes_Then_PrioritizesIgnoreAttribute()
+    public void When_IncludedPrivateConstructorHasIgnoreAttribute_Then_DoesNotGenerateFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
 
-            [AutoFactory]
+            [AutoFactory(IncludePrivateConstructors = true)]
             public partial class Foo
             {
-                [FactoryMethod("Create")]
+                [FactoryMethodName("Create")]
                 [IgnoreAutoFactory]
-                public Foo(int bar) { }
+                private Foo(int bar) { }
             }
             """,
             expected:
@@ -1330,73 +1327,18 @@ public class FactoryMethodGeneratorTests
     }
 
     [Test]
-    public void When_IgnoreAutoFactoryIsUsedWithoutAutoFactory_Then_DoesNotIgnoreFactoryMethod()
+    public void When_ConstructorModifiersAreUsedWithoutAutoFactory_Then_DoesNotGenerateFactoryMethod()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
 
             public partial class Foo
             {
-                [FactoryMethod("Create")]
+                [FactoryMethodName("Create")]
                 [IgnoreAutoFactory]
                 public Foo(int bar) { }
-            }
-            """,
-            expected:
-            """
-            // <auto-generated />
-            #nullable enable
-
-            namespace Macaron.FactoryMethod.Tests
-            {
-                partial class Foo
-                {
-                    public static Foo Create(int bar) => new(bar);
-                }
-            }
-
-            """
-        );
-    }
-
-    [Test]
-    public void When_FactoryMethodSignatureAlreadyExists_Then_DoseNotGenerateFactoryMethod()
-    {
-        Assert(
-            sourceCode:
-            """
-            namespace Macaron.FactoryMethod.Tests;
-
-            [AutoFactory]
-            public partial class Foo
-            {
-                [FactoryMethod("Create")]
-                public Foo(int bar) { }
-
-                public static Foo Create(int bar) => new(bar);
-            }
-            """,
-            expected:
-            ""
-        );
-    }
-
-    [Test]
-    public void When_NewFactoryMethodAlreadyExists_Then_DoesNotGenerateFactoryMethod()
-    {
-        Assert(
-            sourceCode:
-            """
-            namespace Macaron.FactoryMethod.Tests;
-
-            [AutoFactory]
-            public partial class Foo
-            {
-                public Foo() { }
-
-                public static Foo New() => new();
             }
             """,
             expected:
@@ -1407,7 +1349,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_FactoryMethodParameterHasGeneric_Then_PreserveGenericParameterNullability()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;
@@ -1442,7 +1384,7 @@ public class FactoryMethodGeneratorTests
     [Test]
     public void When_RecordParameterNameIsReservedKeyword_Then_EscapesParameterName()
     {
-        Assert(
+        AssertGeneratedCode(
             sourceCode:
             """
             namespace Macaron.FactoryMethod.Tests;

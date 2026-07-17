@@ -7,7 +7,34 @@ namespace Macaron.FactoryMethod.Tests;
 
 internal static class Helper
 {
-    public static void Assert(string sourceCode, string expected)
+    private static readonly string[] AttributeHintNames =
+    [
+        "AutoFactoryAttribute.g.cs",
+        "FactoryMethodNameAttribute.g.cs",
+        "IgnoreAutoFactoryAttribute.g.cs",
+    ];
+
+    public static void AssertGeneratedCode(string sourceCode, string expected)
+    {
+        var compilation = CreateCompilation(sourceCode);
+        var driver = CreateGeneratorDriver();
+        driver = RunGenerator(driver, compilation);
+
+        var result = GetGeneratorResult(driver);
+        var generatedSources = GetFactoryGeneratedSources(result);
+        var actual = generatedSources.Length > 0
+            ? generatedSources.Single().SourceText.ToString()
+            : "";
+
+        Assert.That(actual.ReplaceLineEndings(), Is.EqualTo(expected.ReplaceLineEndings()));
+    }
+
+    public static CSharpSyntaxTree ParseSyntaxTree(string sourceCode)
+    {
+        return (CSharpSyntaxTree)CSharpSyntaxTree.ParseText(SourceText.From(sourceCode, Encoding.UTF8));
+    }
+
+    public static CSharpCompilation CreateCompilation(params SyntaxTree[] syntaxTrees)
     {
         var dataAnnotationsAssembly = typeof(System.ComponentModel.DataAnnotations.RequiredAttribute).Assembly;
 
@@ -19,28 +46,63 @@ internal static class Helper
             .Select(assembly => MetadataReference.CreateFromFile(assembly.Location))
             .Cast<MetadataReference>();
 
-        var syntaxTree = CSharpSyntaxTree.ParseText(SourceText.From(sourceCode, Encoding.UTF8));
-        var compilation = CSharpCompilation.Create(
+        return CSharpCompilation.Create(
             assemblyName: "Macaron.FactoryMethod.Tests",
-            syntaxTrees: [syntaxTree],
+            syntaxTrees: syntaxTrees,
             references: references,
             options: new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable
             )
         );
+    }
 
-        var generator = new FactoryMethodGenerator();
-        var driver = CSharpGeneratorDriver
-            .Create(generator)
-            .RunGenerators(compilation);
+    public static GeneratorDriver CreateGeneratorDriver(bool trackIncrementalSteps = false)
+    {
+        return CSharpGeneratorDriver.Create(
+            generators: [new FactoryMethodGenerator().AsSourceGenerator()],
+            additionalTexts: [],
+            parseOptions: CSharpParseOptions.Default,
+            optionsProvider: null,
+            driverOptions: new GeneratorDriverOptions(
+                IncrementalGeneratorOutputKind.None,
+                trackIncrementalSteps
+            )
+        );
+    }
 
-        var result = driver.GetRunResult().Results.Single();
-        var generatedSources = result.GeneratedSources;
+    public static GeneratorDriver RunGenerator(GeneratorDriver driver, Compilation compilation)
+    {
+        return driver.RunGenerators(compilation);
+    }
 
-        // 0, 1, 2번은 AutoFactoryAttribute, FactoryMethodAttribute, IgnoreAutoFactoryAttribute
-        var actual = generatedSources.Length > 3 ? generatedSources[3].SyntaxTree.ToString() : "";
+    public static GeneratorRunResult GetGeneratorResult(GeneratorDriver driver)
+    {
+        return driver.GetRunResult().Results.Single();
+    }
 
-        NUnit.Framework.Assert.That(actual.ReplaceLineEndings(), Is.EqualTo(expected.ReplaceLineEndings()));
+    public static IncrementalStepRunReason[] GetTrackedOutputReasons(
+        GeneratorRunResult result,
+        string stepName
+    )
+    {
+        return result
+            .TrackedOutputSteps[stepName]
+            .SelectMany(step => step.Outputs)
+            .Select(output => output.Item2)
+            .ToArray();
+    }
+
+    private static CSharpCompilation CreateCompilation(string sourceCode)
+    {
+        return CreateCompilation(ParseSyntaxTree(sourceCode));
+    }
+
+    private static GeneratedSourceResult[] GetFactoryGeneratedSources(GeneratorRunResult result)
+    {
+        return result
+            .GeneratedSources
+            .Where(source => !AttributeHintNames.Contains(source.HintName))
+            .ToArray();
     }
 }

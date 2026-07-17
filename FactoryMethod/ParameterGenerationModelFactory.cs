@@ -9,33 +9,26 @@ using static Microsoft.CodeAnalysis.SymbolDisplayMiscellaneousOptions;
 
 namespace Macaron.FactoryMethod;
 
-internal static class ParameterStringHelpers
+internal static class ParameterGenerationModelFactory
 {
-    public static string GetParameterString(IParameterSymbol parameterSymbol)
+    public static ParameterGenerationModel Create(IParameterSymbol parameterSymbol)
     {
         var attributesString = GetParameterAttributesString(parameterSymbol);
         var modifiersString = GetParameterModifierString(parameterSymbol);
         var typeString = parameterSymbol.Type.ToDisplayString(FullyQualifiedFormat.WithMiscellaneousOptions(
-            IncludeNullableReferenceTypeModifier |
-            UseSpecialTypes
+            IncludeNullableReferenceTypeModifier
+            | UseSpecialTypes
         ));
         var nameString = GetParameterName(parameterSymbol);
         var defaultValueString = GetParameterDefaultValueString(parameterSymbol);
 
-        return $"{attributesString}{modifiersString}{typeString} {nameString}{defaultValueString}";
-    }
-
-    public static string GetArgumentString(IParameterSymbol parameterSymbol)
-    {
-        var prefix = parameterSymbol.RefKind switch
-        {
-            RefKind.Ref => "ref ",
-            RefKind.Out => "out ",
-            RefKind.In => "in ",
-            _ => ""
-        };
-
-        return $"{prefix}{GetParameterName(parameterSymbol)}";
+        return new ParameterGenerationModel(
+            Attribute: attributesString,
+            Modifier: modifiersString,
+            Type: typeString,
+            Name: nameString,
+            DefaultValue: defaultValueString
+         );
     }
 
     private static string GetParameterName(IParameterSymbol parameterSymbol)
@@ -67,6 +60,7 @@ internal static class ParameterStringHelpers
         }
 
         var attributesBuilder = new StringBuilder();
+
         foreach (var attribute in parameterSymbol.GetAttributes())
         {
             if (attribute.AttributeClass is null)
@@ -82,11 +76,12 @@ internal static class ParameterStringHelpers
             {
                 attributeBuilder.Append("(");
 
-                var ctorArgs = attribute.ConstructorArguments
+                var ctorArgs = attribute
+                    .ConstructorArguments
                     .Select(FormatAttributeArgument)
                     .ToList();
-
-                var namedArgs = attribute.NamedArguments
+                var namedArgs = attribute
+                    .NamedArguments
                     .Select(pair => $"{pair.Key} = {FormatAttributeArgument(pair.Value)}")
                     .ToList();
 
