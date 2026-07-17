@@ -17,31 +17,38 @@ public sealed class FactoryMethodGenerator : IIncrementalGenerator
     #region IIncrementalGenerator Interface
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var modelProvider = context
+        var generationModelAndDiagnosticsProvider = context
             .SyntaxProvider
             .ForAttributeWithMetadataName(
                 fullyQualifiedMetadataName: AutoFactoryAttributeMetadataName,
                 predicate: static (syntaxNode, _) => syntaxNode is TypeDeclarationSyntax,
-                transform: static (attributeContext, cancellationToken) => SourceGenerationModelFactory.Create(
-                    attributeContext,
-                    cancellationToken
-                )
-            )
-            .Where(static model => model != null)
-            .Select(static (model, _) => model!);
+                transform: SourceGenerationModelFactory.Create
+            );
 
         context.RegisterSourceOutput(
-            source: modelProvider.Select(static (model, cancellationToken) =>
+            source: generationModelAndDiagnosticsProvider
+                .Where(static x => x.Item2.Length > 0)
+                .SelectMany(static (x, _) => x.Item2),
+            action: static (sourceProductionContext, diagnostic) =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                sourceProductionContext.ReportDiagnostic(diagnostic);
+            }
+        );
+        context.RegisterSourceOutput(
+            source: generationModelAndDiagnosticsProvider
+                .Where(static x => x.Item1 != null)
+                .Select(static (x, _) => x.Item1!)
+                .Select(static (model, cancellationToken) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                return GenerateSource(model);
-            }),
+                    return GenerateSource(model);
+                }),
             action: static (sourceProductionContext, source) =>
             {
                 sourceProductionContext.AddSource(
                     hintName: source.HintName,
-                    sourceText: SourceText.From(source.Source, Encoding.UTF8)
+                    sourceText: SourceText.From(text: source.Source, encoding: Encoding.UTF8)
                 );
             }
         );

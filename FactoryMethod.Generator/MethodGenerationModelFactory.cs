@@ -10,7 +10,7 @@ internal static class MethodGenerationModelFactory
     private const string DefaultMethodName = "Of";
     private const string DefaultParameterlessMethodName = "New";
 
-    public static MethodGenerationModel? Create(IMethodSymbol methodSymbol)
+    public static Result<MethodGenerationModel, Diagnostic>? Create(IMethodSymbol methodSymbol)
     {
         string? methodName = null;
 

@@ -16,14 +16,14 @@ internal static class SourceGenerationModelFactory
         genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters
     );
 
-    public static SourceGenerationModel? Create(
+    public static (SourceGenerationModel?, ImmutableArray<Diagnostic>) Create(
         GeneratorAttributeSyntaxContext context,
         CancellationToken cancellationToken
     )
     {
         if (context.TargetSymbol is not INamedTypeSymbol typeSymbol)
         {
-            return null;
+            return (null, ImmutableArray<Diagnostic>.Empty);
         }
 
         var includePrivateConstructors = GetIncludePrivateConstructors(context);
@@ -31,12 +31,14 @@ internal static class SourceGenerationModelFactory
         var methodsBuilder = ImmutableArray.CreateBuilder<MethodGenerationModel>(
             constructors.Length
         );
+        var diagnosticsBuilder = ImmutableArray.CreateBuilder<Diagnostic>();
 
         foreach (var methodSymbol in constructors)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             var declaredAccessibility = methodSymbol.DeclaredAccessibility;
+
             if (declaredAccessibility is not (Public or Internal)
                 && !(includePrivateConstructors && declaredAccessibility is Private)
             )
@@ -44,16 +46,25 @@ internal static class SourceGenerationModelFactory
                 continue;
             }
 
-            var method = MethodGenerationModelFactory.Create(methodSymbol);
-            if (method is not null)
+            var result = MethodGenerationModelFactory.Create(methodSymbol);
+
+            if (result is { HasValue: true, Value: var methodModel })
             {
-                methodsBuilder.Add(method);
+                methodsBuilder.Add(methodModel);
+            }
+            else if (result is { HasError: true, Error: var diagnostic })
+            {
+                diagnosticsBuilder.Add(diagnostic);
+            }
+            else
+            {
+                throw new InvalidOperationException($"Unexpected result: {result}");
             }
         }
 
         if (methodsBuilder.Count == 0)
         {
-            return null;
+            return (null, diagnosticsBuilder.ToImmutable());
         }
 
         var methods = methodsBuilder.Count == constructors.Length
@@ -81,13 +92,15 @@ internal static class SourceGenerationModelFactory
             ? ""
             : typeSymbol.ContainingNamespace.ToDisplayString();
 
-        return new SourceGenerationModel(
+        var model =  new SourceGenerationModel(
             HintName: GetHintName(typeSymbol),
             Namespace: @namespace,
             TypeName: typeSymbol.ToDisplayString(ReturnTypeDisplayFormat),
             TypeDeclarations: typeDeclarations.MoveToImmutable(),
             Methods: methods
         );
+
+        return (model, diagnosticsBuilder.ToImmutable());
     }
 
     private static bool GetIncludePrivateConstructors(GeneratorAttributeSyntaxContext context)
