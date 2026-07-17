@@ -1,6 +1,6 @@
 ﻿namespace Macaron.FactoryMethod;
 
-public sealed record ParameterGenerationModel(
+internal sealed record ParameterGenerationModel(
     string Attribute,
     string Modifier,
     string Type,

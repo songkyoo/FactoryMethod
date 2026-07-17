@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp;
 
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using static Microsoft.CodeAnalysis.RefKind;
 using static Microsoft.CodeAnalysis.SymbolDisplayFormat;
 using static Microsoft.CodeAnalysis.SymbolDisplayMiscellaneousOptions;
 
@@ -11,14 +12,17 @@ namespace Macaron.FactoryMethod;
 
 internal static class ParameterGenerationModelFactory
 {
+    private static readonly SymbolDisplayFormat ParameterTypeDisplayFormat = FullyQualifiedFormat
+        .WithMiscellaneousOptions(
+            IncludeNullableReferenceTypeModifier
+            | UseSpecialTypes
+        );
+
     public static ParameterGenerationModel Create(IParameterSymbol parameterSymbol)
     {
         var attributesString = GetParameterAttributesString(parameterSymbol);
         var modifiersString = GetParameterModifierString(parameterSymbol);
-        var typeString = parameterSymbol.Type.ToDisplayString(FullyQualifiedFormat.WithMiscellaneousOptions(
-            IncludeNullableReferenceTypeModifier
-            | UseSpecialTypes
-        ));
+        var typeString = parameterSymbol.Type.ToDisplayString(ParameterTypeDisplayFormat);
         var nameString = GetParameterName(parameterSymbol);
         var defaultValueString = GetParameterDefaultValueString(parameterSymbol);
 
@@ -28,7 +32,7 @@ internal static class ParameterGenerationModelFactory
             Type: typeString,
             Name: nameString,
             DefaultValue: defaultValueString
-         );
+        );
     }
 
     private static string GetParameterName(IParameterSymbol parameterSymbol)
@@ -39,29 +43,38 @@ internal static class ParameterGenerationModelFactory
     private static string EscapeIdentifier(string name)
     {
         return
-            SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None ||
-            SyntaxFacts.GetContextualKeywordKind(name) != SyntaxKind.None
-                ? $"@{name}"
-                : name;
+            SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None
+            || SyntaxFacts.GetContextualKeywordKind(name) != SyntaxKind.None
+            ? $"@{name}"
+            : name;
     }
 
     private static string GetCamelCaseName(string name)
     {
-        return name.Length > 0 && char.IsLetter(name[0])
-            ? char.ToLowerInvariant(name[0]) + (name.Length > 1 ? name[1..] : "")
-            : name;
+        if (name.Length == 0 || !char.IsLetter(name[0]))
+        {
+            return name;
+        }
+
+        var firstCharacter = char.ToLowerInvariant(name[0]);
+
+        return firstCharacter == name[0]
+            ? name
+            : firstCharacter + (name.Length > 1 ? name[1..] : "");
     }
 
     private static string GetParameterAttributesString(IParameterSymbol parameterSymbol)
     {
-        if (!parameterSymbol.GetAttributes().Any())
+        var attributes = parameterSymbol.GetAttributes();
+
+        if (attributes.IsEmpty)
         {
             return "";
         }
 
         var attributesBuilder = new StringBuilder();
 
-        foreach (var attribute in parameterSymbol.GetAttributes())
+        foreach (var attribute in attributes)
         {
             if (attribute.AttributeClass is null)
             {
@@ -76,16 +89,14 @@ internal static class ParameterGenerationModelFactory
             {
                 attributeBuilder.Append("(");
 
-                var ctorArgs = attribute
+                var constructorArguments = attribute
                     .ConstructorArguments
-                    .Select(FormatAttributeArgument)
-                    .ToList();
-                var namedArgs = attribute
+                    .Select(FormatAttributeArgument);
+                var namedArguments = attribute
                     .NamedArguments
-                    .Select(pair => $"{pair.Key} = {FormatAttributeArgument(pair.Value)}")
-                    .ToList();
+                    .Select(pair => $"{pair.Key} = {FormatAttributeArgument(pair.Value)}");
 
-                attributeBuilder.Append(string.Join(", ", ctorArgs.Concat(namedArgs)));
+                attributeBuilder.Append(string.Join(", ", constructorArguments.Concat(namedArguments)));
                 attributeBuilder.Append(")");
             }
 
@@ -113,9 +124,9 @@ internal static class ParameterGenerationModelFactory
     {
         return parameterSymbol switch
         {
-            { RefKind: RefKind.Ref } => "ref ",
-            { RefKind: RefKind.Out } => "out ",
-            { RefKind: RefKind.In } => "in ",
+            { RefKind: Ref } => "ref ",
+            { RefKind: Out } => "out ",
+            { RefKind: In } => "in ",
             { IsParams: true } => "params ",
             _ => "",
         };
@@ -143,10 +154,10 @@ internal static class ParameterGenerationModelFactory
             var enumType = parameterSymbol.Type;
             var fullyQualifiedEnumName = enumType.ToDisplayString(FullyQualifiedFormat);
 
-            foreach (var fieldSymbol in enumType.GetMembers().OfType<IFieldSymbol>())
+            foreach (var memberSymbol in enumType.GetMembers())
             {
-                if (fieldSymbol is { IsStatic: true, HasConstantValue: true } &&
-                    fieldSymbol.ConstantValue.Equals(defaultValue)
+                if (memberSymbol is IFieldSymbol { IsStatic: true, HasConstantValue: true } fieldSymbol
+                    && fieldSymbol.ConstantValue.Equals(defaultValue)
                 )
                 {
                     return $" = {fullyQualifiedEnumName}.{fieldSymbol.Name}";

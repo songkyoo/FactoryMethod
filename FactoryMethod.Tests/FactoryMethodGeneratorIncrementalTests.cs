@@ -84,6 +84,53 @@ public class FactoryMethodGeneratorIncrementalTests
         );
     }
 
+    [Test]
+    public void When_ConstructorBodyChanges_Then_TargetOutputUsesCachedOutput()
+    {
+        var initialSyntaxTree = ParseSyntaxTree(
+            """
+            namespace Macaron.FactoryMethod.Tests;
+
+            [AutoFactory]
+            public partial class Foo
+            {
+                public Foo(int value) { }
+            }
+            """
+        );
+        var updatedSyntaxTree = ParseSyntaxTree(
+            """
+            namespace Macaron.FactoryMethod.Tests;
+
+            [AutoFactory]
+            public partial class Foo
+            {
+                public Foo(int value)
+                {
+                    _ = value;
+                }
+            }
+            """
+        );
+        var initialCompilation = CreateCompilation(initialSyntaxTree);
+        var updatedCompilation = initialCompilation.ReplaceSyntaxTree(
+            initialSyntaxTree,
+            updatedSyntaxTree
+        );
+        var driver = CreateGeneratorDriver(trackIncrementalSteps: true);
+
+        driver = RunGenerator(driver, initialCompilation);
+        driver = RunGenerator(driver, updatedCompilation);
+
+        var result = GetGeneratorResult(driver);
+        var outputReasons = GetTrackedOutputReasons(result, "SourceOutput");
+
+        NUnit.Framework.Assert.That(
+            outputReasons,
+            Is.EqualTo(new[] { IncrementalStepRunReason.Cached })
+        );
+    }
+
     private static void AssertUnchangedTargetUsesCachedOutput(
         string initialSourceCode,
         string updatedSourceCode,
@@ -109,7 +156,11 @@ public class FactoryMethodGeneratorIncrementalTests
 
         NUnit.Framework.Assert.That(
             outputReasons,
-            Does.Contain(IncrementalStepRunReason.Cached)
+            Is.EquivalentTo(new[]
+            {
+                IncrementalStepRunReason.New,
+                IncrementalStepRunReason.Cached,
+            })
         );
     }
 }

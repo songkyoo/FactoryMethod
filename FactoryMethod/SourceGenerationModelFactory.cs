@@ -28,20 +28,38 @@ internal static class SourceGenerationModelFactory
         }
 
         var includePrivateConstructors = GetIncludePrivateConstructors(context);
-        var methodsBuilder = ImmutableArray.CreateBuilder<MethodGenerationModel>();
-        var typeString = typeSymbol.ToDisplayString(ReturnTypeDisplayFormat);
+        var constructors = typeSymbol.InstanceConstructors;
+        var methodsBuilder = ImmutableArray.CreateBuilder<MethodGenerationModel>(
+            constructors.Length
+        );
 
-        foreach (var methodSymbol in FilterTargetConstructors(typeSymbol, includePrivateConstructors))
+        foreach (var methodSymbol in constructors)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            methodsBuilder.Add(MethodGenerationModelFactory.Create(typeString, methodSymbol));
+            var declaredAccessibility = methodSymbol.DeclaredAccessibility;
+            if (declaredAccessibility is not (Public or Internal)
+                && !(includePrivateConstructors && declaredAccessibility is Private)
+            )
+            {
+                continue;
+            }
+
+            var method = MethodGenerationModelFactory.Create(methodSymbol);
+            if (method is not null)
+            {
+                methodsBuilder.Add(method);
+            }
         }
 
         if (methodsBuilder.Count == 0)
         {
             return null;
         }
+
+        var methods = methodsBuilder.Count == constructors.Length
+            ? methodsBuilder.MoveToImmutable()
+            : methodsBuilder.ToImmutable();
 
         var typeSymbols = new List<INamedTypeSymbol> { typeSymbol };
         var parentType = typeSymbol.ContainingType;
@@ -53,11 +71,13 @@ internal static class SourceGenerationModelFactory
             parentType = parentType.ContainingType;
         }
 
-        var typeDeclarations = typeSymbols
-            .AsEnumerable()
-            .Reverse()
-            .Select(GetPartialTypeDeclarationString)
-            .ToImmutableArray();
+        var typeDeclarations = ImmutableArray.CreateBuilder<string>(typeSymbols.Count);
+
+        for (var i = typeSymbols.Count - 1; i >= 0; i--)
+        {
+            typeDeclarations.Add(GetPartialTypeDeclarationString(typeSymbols[i]));
+        }
+
         var @namespace = typeSymbol.ContainingNamespace.IsGlobalNamespace
             ? ""
             : typeSymbol.ContainingNamespace.ToDisplayString();
@@ -65,8 +85,9 @@ internal static class SourceGenerationModelFactory
         return new SourceGenerationModel(
             HintName: GetHintName(typeSymbol),
             Namespace: @namespace,
-            TypeDeclarations: typeDeclarations,
-            Methods: methodsBuilder.ToImmutable()
+            TypeName: typeSymbol.ToDisplayString(ReturnTypeDisplayFormat),
+            TypeDeclarations: typeDeclarations.MoveToImmutable(),
+            Methods: methods
         );
     }
 
@@ -84,52 +105,6 @@ internal static class SourceGenerationModelFactory
         }
 
         return false;
-    }
-
-    private static IEnumerable<IMethodSymbol> FilterTargetConstructors(
-        INamedTypeSymbol typeSymbol,
-        bool includePrivateConstructors
-    )
-    {
-        return typeSymbol
-            .InstanceConstructors
-            .Where(methodSymbol =>
-            {
-                if (HasIgnoreAutoFactoryAttribute(methodSymbol))
-                {
-                    return false;
-                }
-
-                var declaredAccessibility = methodSymbol.DeclaredAccessibility;
-
-                return declaredAccessibility is Public or Internal
-                       || includePrivateConstructors && declaredAccessibility is Private;
-            });
-    }
-
-    private static bool HasIgnoreAutoFactoryAttribute(IMethodSymbol methodSymbol)
-    {
-        return methodSymbol.GetAttributes().Any(x => IsIgnoreAutoFactoryAttribute(x.AttributeClass));
-    }
-
-    private static bool IsIgnoreAutoFactoryAttribute(INamedTypeSymbol? symbol)
-    {
-        return symbol is
-        {
-            Name: "IgnoreAutoFactoryAttribute",
-            ContainingNamespace:
-            {
-                Name: "FactoryMethod",
-                ContainingNamespace:
-                {
-                    Name: "Macaron",
-                    ContainingNamespace:
-                    {
-                        IsGlobalNamespace: true,
-                    },
-                },
-            },
-        };
     }
 
     private static string GetPartialTypeDeclarationString(INamedTypeSymbol typeSymbol)
@@ -163,8 +138,8 @@ internal static class SourceGenerationModelFactory
         const uint fnvPrime = 16777619;
         const uint offsetBasis = 2166136261;
 
-        var bytes = Encoding.UTF8.GetBytes($"{qualifiedName}");
-        uint hash = offsetBasis;
+        var bytes = Encoding.UTF8.GetBytes(qualifiedName);
+        var hash = offsetBasis;
 
         foreach (var b in bytes)
         {

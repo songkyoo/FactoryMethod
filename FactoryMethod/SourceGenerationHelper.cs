@@ -49,7 +49,7 @@ internal static class SourceGenerationHelper
                 stringBuilder.AppendLine();
             }
 
-            stringBuilder.AppendLine($"{depthSpacerText}{method.AccessModifier} static {method.Type} {method.Name}({paramList}) => new({argList});");
+            stringBuilder.AppendLine($"{depthSpacerText}{method.AccessModifier} static {model.TypeName} {method.Name}({paramList}) => new({argList});");
         }
 
         // nested type end

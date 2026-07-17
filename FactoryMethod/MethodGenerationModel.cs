@@ -2,9 +2,8 @@
 
 namespace Macaron.FactoryMethod;
 
-public sealed record MethodGenerationModel(
+internal sealed record MethodGenerationModel(
     string AccessModifier,
-    string Type,
     string Name,
     ImmutableArray<ParameterGenerationModel> Parameters
 )
@@ -14,7 +13,6 @@ public sealed record MethodGenerationModel(
         return ReferenceEquals(this, other)
             || other is not null
             && AccessModifier == other.AccessModifier
-            && Type == other.Type
             && Name == other.Name
             && Parameters.SequenceEqual(other.Parameters);
     }
@@ -27,7 +25,6 @@ public sealed record MethodGenerationModel(
         {
             var hashCode = stringComparer.GetHashCode(AccessModifier);
 
-            hashCode = (hashCode * 397) ^ stringComparer.GetHashCode(Type);
             hashCode = (hashCode * 397) ^ stringComparer.GetHashCode(Name);
 
             foreach (var parameter in Parameters)

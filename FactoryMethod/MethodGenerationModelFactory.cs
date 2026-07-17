@@ -5,43 +5,57 @@ using static Microsoft.CodeAnalysis.Accessibility;
 
 namespace Macaron.FactoryMethod;
 
-public static class MethodGenerationModelFactory
+internal static class MethodGenerationModelFactory
 {
     private const string DefaultMethodName = "Of";
     private const string DefaultParameterlessMethodName = "New";
 
-    public static MethodGenerationModel Create(string typeString, IMethodSymbol methodSymbol)
+    public static MethodGenerationModel? Create(IMethodSymbol methodSymbol)
     {
-        var methodName = GetMethodName(methodSymbol);
-        var accessModifier = methodSymbol.DeclaredAccessibility == Private
-            ? "public"
-            : methodSymbol.DeclaredAccessibility.ToString().ToLowerInvariant(); // public or internal
-        var parameterGenerationModels = methodSymbol
-            .Parameters
-            .Select(ParameterGenerationModelFactory.Create)
-            .ToImmutableArray();
+        string? methodName = null;
+
+        foreach (var attributeData in methodSymbol.GetAttributes())
+        {
+            if (IsIgnoreAutoFactoryAttribute(attributeData.AttributeClass))
+            {
+                return null;
+            }
+
+            if (IsFactoryMethodNameAttribute(attributeData.AttributeClass)
+                && TryGetGeneratedFactoryMethodName(attributeData, out var specifiedMethodName)
+            )
+            {
+                methodName = specifiedMethodName;
+            }
+        }
+
+        methodName ??= methodSymbol.Parameters.IsEmpty
+            ? DefaultParameterlessMethodName
+            : DefaultMethodName;
+
+        var accessModifier = methodSymbol.DeclaredAccessibility switch
+        {
+            Internal => "internal",
+            Public or Private => "public",
+            _ => throw new InvalidOperationException(
+                $"Invalid constructor accessibility: {methodSymbol.DeclaredAccessibility}"
+            ),
+        };
+        var parameters = methodSymbol.Parameters;
+        var parameterGenerationModels = ImmutableArray.CreateBuilder<ParameterGenerationModel>(
+            parameters.Length
+        );
+
+        foreach (var parameterSymbol in parameters)
+        {
+            parameterGenerationModels.Add(ParameterGenerationModelFactory.Create(parameterSymbol));
+        }
 
         return new MethodGenerationModel(
             AccessModifier: accessModifier,
-            Type: typeString,
             Name: methodName,
-            Parameters: parameterGenerationModels
+            Parameters: parameterGenerationModels.MoveToImmutable()
         );
-    }
-
-    private static string GetMethodName(IMethodSymbol methodSymbol)
-    {
-        var parameters = methodSymbol.Parameters;
-        var attributeData = methodSymbol
-            .GetAttributes()
-            .FirstOrDefault(x => IsFactoryMethodNameAttribute(x.AttributeClass));
-
-        if (TryGetGeneratedFactoryMethodName(attributeData, out var methodName))
-        {
-            return methodName;
-        }
-
-        return parameters.IsEmpty ? DefaultParameterlessMethodName : DefaultMethodName;
     }
 
     private static bool IsFactoryMethodNameAttribute(INamedTypeSymbol? symbol)
@@ -49,6 +63,26 @@ public static class MethodGenerationModelFactory
         return symbol is
         {
             Name: "FactoryMethodNameAttribute",
+            ContainingNamespace:
+            {
+                Name: "FactoryMethod",
+                ContainingNamespace:
+                {
+                    Name: "Macaron",
+                    ContainingNamespace:
+                    {
+                        IsGlobalNamespace: true,
+                    },
+                },
+            },
+        };
+    }
+
+    private static bool IsIgnoreAutoFactoryAttribute(INamedTypeSymbol? symbol)
+    {
+        return symbol is
+        {
+            Name: "IgnoreAutoFactoryAttribute",
             ContainingNamespace:
             {
                 Name: "FactoryMethod",
