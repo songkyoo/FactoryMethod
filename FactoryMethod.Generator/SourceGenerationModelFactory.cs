@@ -48,28 +48,19 @@ internal static class SourceGenerationModelFactory
 
             var result = MethodGenerationModelFactory.Create(methodSymbol);
 
-            if (result is { HasValue: true, Value: var methodModel })
+            switch (result)
             {
-                methodsBuilder.Add(methodModel);
-            }
-            else if (result is { HasError: true, Error: var diagnostic })
-            {
-                diagnosticsBuilder.Add(diagnostic);
-            }
-            else
-            {
-                throw new InvalidOperationException($"Unexpected result: {result}");
+                case null: continue;
+                case { HasValue: true, Value: var methodModel }: methodsBuilder.Add(methodModel); break;
+                case { HasError: true, Error: var diagnostic }: diagnosticsBuilder.Add(diagnostic); break;
+                default: throw new InvalidOperationException($"Unexpected result: {result}");
             }
         }
 
         if (methodsBuilder.Count == 0)
         {
-            return (null, diagnosticsBuilder.ToImmutable());
+            return (null, diagnosticsBuilder.MoveOrCopyToImmutable());
         }
-
-        var methods = methodsBuilder.Count == constructors.Length
-            ? methodsBuilder.MoveToImmutable()
-            : methodsBuilder.ToImmutable();
 
         var typeSymbols = new List<INamedTypeSymbol> { typeSymbol };
         var parentType = typeSymbol.ContainingType;
@@ -96,11 +87,11 @@ internal static class SourceGenerationModelFactory
             HintName: GetHintName(typeSymbol),
             Namespace: @namespace,
             TypeName: typeSymbol.ToDisplayString(ReturnTypeDisplayFormat),
-            TypeDeclarations: typeDeclarations.MoveToImmutable(),
-            Methods: methods
+            TypeDeclarations: typeDeclarations.MoveOrCopyToImmutable(),
+            Methods: methodsBuilder.MoveOrCopyToImmutable()
         );
 
-        return (model, diagnosticsBuilder.ToImmutable());
+        return (model, diagnosticsBuilder.MoveOrCopyToImmutable());
     }
 
     private static bool GetIncludePrivateConstructors(GeneratorAttributeSyntaxContext context)
@@ -160,5 +151,15 @@ internal static class SourceGenerationModelFactory
         }
 
         return $"{typeSymbol.Name}_{typeSymbol.Arity}.{hash:x8}.g.cs";
+    }
+}
+
+file static class FileScopeExtensions
+{
+    public static ImmutableArray<T> MoveOrCopyToImmutable<T>(this ImmutableArray<T>.Builder builder)
+    {
+        return builder.Count == builder.Capacity
+            ? builder.MoveToImmutable()
+            : builder.ToImmutable();
     }
 }

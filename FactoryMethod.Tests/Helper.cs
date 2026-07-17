@@ -76,6 +76,15 @@ internal static class Helper
         return driver.GetRunResult().Results.Single();
     }
 
+    public static GeneratorRunResult GetGeneratorResult(string sourceCode)
+    {
+        var compilation = CreateCompilation(sourceCode);
+        var driver = CreateGeneratorDriver();
+        driver = RunGenerator(driver, compilation);
+
+        return GetGeneratorResult(driver);
+    }
+
     public static IncrementalStepRunReason[] GetTrackedOutputReasons(
         GeneratorRunResult result,
         string stepName

@@ -1,7 +1,9 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 using static Microsoft.CodeAnalysis.Accessibility;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace Macaron.FactoryMethod;
 
@@ -13,6 +15,7 @@ internal static class MethodGenerationModelFactory
     public static Result<MethodGenerationModel, Diagnostic>? Create(IMethodSymbol methodSymbol)
     {
         string? methodName = null;
+        AttributeData? factoryMethodNameAttribute = null;
 
         foreach (var attributeData in methodSymbol.GetAttributes())
         {
@@ -26,7 +29,21 @@ internal static class MethodGenerationModelFactory
             )
             {
                 methodName = specifiedMethodName;
+                factoryMethodNameAttribute = attributeData;
             }
+        }
+
+        if (methodName is not null)
+        {
+            if (!TryEscapeIdentifier(methodName, out var escapedMethodName))
+            {
+                return DiagnosticFactory.CreateInvalidFactoryMethodName(
+                    factoryMethodNameAttribute!,
+                    methodName
+                );
+            }
+
+            methodName = escapedMethodName;
         }
 
         methodName ??= methodSymbol.Parameters.IsEmpty
@@ -56,6 +73,31 @@ internal static class MethodGenerationModelFactory
             Name: methodName,
             Parameters: parameterGenerationModels.MoveToImmutable()
         );
+    }
+
+    private static bool TryEscapeIdentifier(string name, out string escapedName)
+    {
+        if (name[0] == '@')
+        {
+            escapedName = name;
+
+            return SyntaxFacts.IsValidIdentifier(name[1..]);
+        }
+
+        if (!SyntaxFacts.IsValidIdentifier(name))
+        {
+            escapedName = "";
+
+            return false;
+        }
+
+        escapedName =
+            SyntaxFacts.GetKeywordKind(name) != None
+            || SyntaxFacts.GetContextualKeywordKind(name) != None
+            ? $"@{name}"
+            : name;
+
+        return true;
     }
 
     private static bool IsFactoryMethodNameAttribute(INamedTypeSymbol? symbol)
