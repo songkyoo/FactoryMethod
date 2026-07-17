@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="FactoryMethod/FactoryMethod.csproj" />
+  <Project Path="FactoryMethod.Generator/FactoryMethod.Generator.csproj" />
+  <Project Path="FactoryMethod.Tests/FactoryMethod.Tests.csproj" />
+</Solution>

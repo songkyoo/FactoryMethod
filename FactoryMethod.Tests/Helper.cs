@@ -7,13 +7,6 @@ namespace Macaron.FactoryMethod.Tests;
 
 internal static class Helper
 {
-    private static readonly string[] AttributeHintNames =
-    [
-        "AutoFactoryAttribute.g.cs",
-        "FactoryMethodNameAttribute.g.cs",
-        "IgnoreAutoFactoryAttribute.g.cs",
-    ];
-
     public static void AssertGeneratedCode(string sourceCode, string expected)
     {
         var compilation = CreateCompilation(sourceCode);
@@ -21,7 +14,7 @@ internal static class Helper
         driver = RunGenerator(driver, compilation);
 
         var result = GetGeneratorResult(driver);
-        var generatedSources = GetFactoryGeneratedSources(result);
+        var generatedSources = result.GeneratedSources.ToArray();
         var actual = generatedSources.Length > 0
             ? generatedSources.Single().SourceText.ToString()
             : "";
@@ -37,19 +30,21 @@ internal static class Helper
     public static CSharpCompilation CreateCompilation(params SyntaxTree[] syntaxTrees)
     {
         var dataAnnotationsAssembly = typeof(System.ComponentModel.DataAnnotations.RequiredAttribute).Assembly;
+        var attributesAssembly = typeof(AutoFactoryAttribute).Assembly;
 
         var references = AppDomain
             .CurrentDomain
             .GetAssemblies()
             .Where(assembly => !assembly.IsDynamic && !string.IsNullOrWhiteSpace(assembly.Location))
             .Append(dataAnnotationsAssembly)
+            .Append(attributesAssembly)
             .Select(assembly => MetadataReference.CreateFromFile(assembly.Location))
             .Cast<MetadataReference>();
 
         return CSharpCompilation.Create(
             assemblyName: "Macaron.FactoryMethod.Tests",
-            syntaxTrees: syntaxTrees,
-            references: references,
+            syntaxTrees,
+            references,
             options: new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable
@@ -96,13 +91,5 @@ internal static class Helper
     private static CSharpCompilation CreateCompilation(string sourceCode)
     {
         return CreateCompilation(ParseSyntaxTree(sourceCode));
-    }
-
-    private static GeneratedSourceResult[] GetFactoryGeneratedSources(GeneratorRunResult result)
-    {
-        return result
-            .GeneratedSources
-            .Where(source => !AttributeHintNames.Contains(source.HintName))
-            .ToArray();
     }
 }

@@ -7,7 +7,6 @@ using static Microsoft.CodeAnalysis.SymbolDisplayTypeQualificationStyle;
 
 namespace Macaron.FactoryMethod;
 
-
 internal static class SourceGenerationModelFactory
 {
     private const string IncludePrivateConstructorsPropertyName = "IncludePrivateConstructors";
