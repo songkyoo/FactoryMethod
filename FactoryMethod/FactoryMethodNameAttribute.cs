@@ -1,11 +1,10 @@
 ﻿using System.Diagnostics;
 
-namespace Macaron.FactoryMethod
+namespace Macaron.FactoryMethod;
+
+[Conditional("SOURCE_GENERATOR_ONLY")]
+[AttributeUsage(AttributeTargets.Constructor, Inherited = false, AllowMultiple = false)]
+public sealed class FactoryMethodNameAttribute(string name) : Attribute
 {
-    [Conditional("SOURCE_GENERATOR_ONLY")]
-    [AttributeUsage(AttributeTargets.Constructor, Inherited = false, AllowMultiple = false)]
-    public sealed class FactoryMethodNameAttribute(string name) : Attribute
-    {
-        public string Name { get; } = name;
-    }
+    public string Name { get; } = name;
 }
