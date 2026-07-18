@@ -85,6 +85,43 @@ public class FactoryMethodGeneratorIncrementalTests
     }
 
     [Test]
+    public void When_OneAutoFactoryMethodNameChanges_Then_UnchangedTargetUsesCachedOutput()
+    {
+        AssertUnchangedTargetUsesCachedOutput(
+            initialSourceCode:
+            """
+            namespace Macaron.FactoryMethod.Tests;
+
+            [AutoFactory(methodName: "Create")]
+            public partial class Foo
+            {
+                public Foo(int value) { }
+            }
+            """,
+            updatedSourceCode:
+            """
+            namespace Macaron.FactoryMethod.Tests;
+
+            [AutoFactory(methodName: "FromValue")]
+            public partial class Foo
+            {
+                public Foo(int value) { }
+            }
+            """,
+            unchangedSourceCode:
+            """
+            namespace Macaron.FactoryMethod.Tests;
+
+            [AutoFactory(methodName: "FromString")]
+            public partial class Bar
+            {
+                public Bar(string value) { }
+            }
+            """
+        );
+    }
+
+    [Test]
     public void When_ConstructorBodyChanges_Then_TargetOutputUsesCachedOutput()
     {
         var initialSyntaxTree = ParseSyntaxTree(

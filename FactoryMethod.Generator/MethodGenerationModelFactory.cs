@@ -9,12 +9,12 @@ namespace Macaron.FactoryMethod;
 
 internal static class MethodGenerationModelFactory
 {
-    private const string DefaultMethodName = "Of";
-    private const string DefaultParameterlessMethodName = "New";
-
-    public static Result<MethodGenerationModel, Diagnostic>? Create(IMethodSymbol methodSymbol)
+    public static Result<MethodGenerationModel, Diagnostic>? Create(
+        IMethodSymbol methodSymbol,
+        string defaultMethodName,
+        string defaultParameterlessMethodName
+    )
     {
-        string? methodName = null;
         AttributeData? factoryMethodNameAttribute = null;
 
         foreach (var attributeData in methodSymbol.GetAttributes())
@@ -24,43 +24,45 @@ internal static class MethodGenerationModelFactory
                 return null;
             }
 
-            if (IsFactoryMethodNameAttribute(attributeData.AttributeClass)
-                && TryGetGeneratedFactoryMethodName(attributeData, out var specifiedMethodName)
-            )
+            if (!IsFactoryMethodNameAttribute(attributeData.AttributeClass))
             {
-                methodName = specifiedMethodName;
-                factoryMethodNameAttribute = attributeData;
+                continue;
             }
+
+            if (factoryMethodNameAttribute is not null)
+            {
+                return null;
+            }
+
+            factoryMethodNameAttribute = attributeData;
         }
 
-        if (methodName is not null)
+        string? methodName = null;
+
+        if (TryGetGeneratedFactoryMethodName(factoryMethodNameAttribute, out var specifiedMethodName))
         {
-            if (!TryEscapeIdentifier(methodName, out var escapedMethodName))
+            if (!TryEscapeIdentifier(specifiedMethodName, out methodName))
             {
-                return DiagnosticFactory.CreateInvalidFactoryMethodName(
+                return DiagnosticFactory.InvalidFactoryMethodName(
                     factoryMethodNameAttribute!,
-                    methodName
+                    specifiedMethodName
                 );
             }
-
-            methodName = escapedMethodName;
         }
 
         methodName ??= methodSymbol.Parameters.IsEmpty
-            ? DefaultParameterlessMethodName
-            : DefaultMethodName;
+            ? defaultParameterlessMethodName
+            : defaultMethodName;
 
         var accessModifier = methodSymbol.DeclaredAccessibility switch
         {
             Internal => "internal",
             Public or Private => "public",
-            _ => throw new InvalidOperationException(
-                $"Invalid constructor accessibility: {methodSymbol.DeclaredAccessibility}"
-            ),
+            _ => throw new InvalidOperationException($"Invalid constructor accessibility: {methodSymbol.DeclaredAccessibility}"),
         };
         var parameters = methodSymbol.Parameters;
         var parameterGenerationModels = ImmutableArray.CreateBuilder<ParameterGenerationModel>(
-            parameters.Length
+            initialCapacity: parameters.Length
         );
 
         foreach (var parameterSymbol in parameters)
@@ -75,8 +77,15 @@ internal static class MethodGenerationModelFactory
         );
     }
 
-    private static bool TryEscapeIdentifier(string name, out string escapedName)
+    internal static bool TryEscapeIdentifier(string name, out string escapedName)
     {
+        if (string.IsNullOrEmpty(name))
+        {
+            escapedName = "";
+
+            return false;
+        }
+
         if (name[0] == '@')
         {
             escapedName = name;

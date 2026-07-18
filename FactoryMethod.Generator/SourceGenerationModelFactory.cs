@@ -9,6 +9,8 @@ namespace Macaron.FactoryMethod;
 
 internal static class SourceGenerationModelFactory
 {
+    private const int MethodNameArgumentIndex = 0;
+    private const int ParameterlessMethodNameArgumentIndex = 1;
     private const string IncludePrivateConstructorsPropertyName = "IncludePrivateConstructors";
 
     private static readonly SymbolDisplayFormat ReturnTypeDisplayFormat = new(
@@ -21,17 +23,45 @@ internal static class SourceGenerationModelFactory
         CancellationToken cancellationToken
     )
     {
-        if (context.TargetSymbol is not INamedTypeSymbol typeSymbol)
+        if (context.Attributes.Length != 1
+            || context.TargetSymbol is not INamedTypeSymbol typeSymbol
+        )
         {
             return (null, ImmutableArray<Diagnostic>.Empty);
         }
 
-        var includePrivateConstructors = GetIncludePrivateConstructors(context);
-        var constructors = typeSymbol.InstanceConstructors;
-        var methodsBuilder = ImmutableArray.CreateBuilder<MethodGenerationModel>(
-            constructors.Length
-        );
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var autoFactoryAttribute = context.Attributes[0];
+        var methodName = GetMethodName(autoFactoryAttribute, MethodNameArgumentIndex);
+        var parameterlessMethodName = GetMethodName(autoFactoryAttribute, ParameterlessMethodNameArgumentIndex);
+
         var diagnosticsBuilder = ImmutableArray.CreateBuilder<Diagnostic>();
+
+        ValidateMethodName(
+            autoFactoryAttribute,
+            specifiedName: methodName,
+            argumentIndex: MethodNameArgumentIndex,
+            diagnosticsBuilder,
+            out methodName
+        );
+        ValidateMethodName(
+            autoFactoryAttribute,
+            specifiedName: parameterlessMethodName,
+            argumentIndex: ParameterlessMethodNameArgumentIndex,
+            diagnosticsBuilder,
+            out parameterlessMethodName
+        );
+
+        // AutoFactory 어트리뷰트가 유효하지 않다면 더 진행할 수 없음
+        if (diagnosticsBuilder.Count > 0)
+        {
+            return (null, diagnosticsBuilder.MoveOrCopyToImmutable());
+        }
+
+        var includePrivateConstructors = GetIncludePrivateConstructors(autoFactoryAttribute);
+        var constructors = typeSymbol.InstanceConstructors;
+        var methodsBuilder = ImmutableArray.CreateBuilder<MethodGenerationModel>(initialCapacity: constructors.Length);
 
         foreach (var methodSymbol in constructors)
         {
@@ -46,7 +76,11 @@ internal static class SourceGenerationModelFactory
                 continue;
             }
 
-            var result = MethodGenerationModelFactory.Create(methodSymbol);
+            var result = MethodGenerationModelFactory.Create(
+                methodSymbol,
+                defaultMethodName: methodName,
+                defaultParameterlessMethodName: parameterlessMethodName
+            );
 
             switch (result)
             {
@@ -94,16 +128,40 @@ internal static class SourceGenerationModelFactory
         return (model, diagnosticsBuilder.MoveOrCopyToImmutable());
     }
 
-    private static bool GetIncludePrivateConstructors(GeneratorAttributeSyntaxContext context)
+    private static string GetMethodName(AttributeData autoFactoryAttribute, int argumentIndex)
     {
-        foreach (var attributeData in context.Attributes)
+        return autoFactoryAttribute.ConstructorArguments[argumentIndex].Value as string ?? "";
+    }
+
+    private static void ValidateMethodName(
+        AttributeData autoFactoryAttribute,
+        string specifiedName,
+        int argumentIndex,
+        ImmutableArray<Diagnostic>.Builder diagnosticsBuilder,
+        out string methodName
+    )
+    {
+        specifiedName = specifiedName.Trim();
+
+        if (MethodGenerationModelFactory.TryEscapeIdentifier(specifiedName, out methodName))
         {
-            foreach (var namedArgument in attributeData.NamedArguments)
+            return;
+        }
+
+        diagnosticsBuilder.Add(DiagnosticFactory.InvalidFactoryMethodName(
+            autoFactoryAttribute,
+            specifiedName,
+            argumentIndex
+        ));
+    }
+
+    private static bool GetIncludePrivateConstructors(AttributeData autoFactoryAttribute)
+    {
+        foreach (var namedArgument in autoFactoryAttribute.NamedArguments)
+        {
+            if (namedArgument is { Key: IncludePrivateConstructorsPropertyName, Value.Value: true })
             {
-                if (namedArgument is { Key: IncludePrivateConstructorsPropertyName, Value.Value: true })
-                {
-                    return true;
-                }
+                return true;
             }
         }
 
