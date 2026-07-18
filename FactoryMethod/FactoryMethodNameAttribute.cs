@@ -3,7 +3,7 @@
 namespace Macaron.FactoryMethod;
 
 [Conditional("SOURCE_GENERATOR_ONLY")]
-[AttributeUsage(AttributeTargets.Constructor, Inherited = false, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Constructor)]
 public sealed class FactoryMethodNameAttribute(string name) : Attribute
 {
     public string Name { get; } = name;

@@ -3,7 +3,7 @@
 namespace Macaron.FactoryMethod;
 
 [Conditional("SOURCE_GENERATOR_ONLY")]
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
 public sealed class AutoFactoryAttribute(
     string methodName = "Of",
     string parameterlessMethodName = "New"
