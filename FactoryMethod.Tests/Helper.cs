@@ -85,6 +85,22 @@ internal static class Helper
         return GetGeneratorResult(driver);
     }
 
+    public static CSharpCompilation CompileGeneratedCode(string sourceCode)
+    {
+        var compilation = CreateCompilation(sourceCode);
+        var driver = CreateGeneratorDriver().RunGeneratorsAndUpdateCompilation(
+            compilation,
+            out var outputCompilation,
+            out var diagnostics
+        );
+
+        Assert.That(diagnostics, Is.Empty);
+        Assert.That(GetGeneratorResult(driver).Exception, Is.Null);
+        Assert.That(outputCompilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error), Is.Empty);
+
+        return (CSharpCompilation)outputCompilation;
+    }
+
     public static IncrementalStepRunReason[] GetTrackedOutputReasons(
         GeneratorRunResult result,
         string stepName
