@@ -4,4 +4,4 @@ namespace Macaron.FactoryMethod;
 
 [Conditional("SOURCE_GENERATOR_ONLY")]
 [AttributeUsage(AttributeTargets.Constructor)]
-internal sealed class IgnoreAutoFactoryAttribute : Attribute;
+public sealed class IgnoreAutoFactoryAttribute : Attribute;
