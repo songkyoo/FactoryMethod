@@ -1,5 +1,9 @@
 <Solution>
-  <Project Path="FactoryMethod/FactoryMethod.csproj" />
-  <Project Path="FactoryMethod.Generator/FactoryMethod.Generator.csproj" />
-  <Project Path="FactoryMethod.Tests/FactoryMethod.Tests.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/FactoryMethod/FactoryMethod.csproj" />
+    <Project Path="src/FactoryMethod.Generator/FactoryMethod.Generator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FactoryMethod.Tests/FactoryMethod.Tests.csproj" />
+  </Folder>
 </Solution>

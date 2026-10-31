@@ -5,10 +5,10 @@
 ## 빌드하기
 
 ```shell
-dotnet pack ./FactoryMethod/FactoryMethod.csproj -c Release
+dotnet pack ./src/FactoryMethod/FactoryMethod.csproj -c Release
 ```
 
-`FactoryMethod/bin/Release/` 폴더에 패키지가 생성됩니다.
+`src/FactoryMethod/bin/Release/` 폴더에 패키지가 생성됩니다.
 
 ## 사용법
 
